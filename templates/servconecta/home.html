@@ -5,108 +5,109 @@
 
 {% block content %}
 
-  <!-- ==================== HERO ==================== -->
-  <section class="hero">
-    <h1>Conectando Profissionais e Clientes</h1>
-    <p>Encontre o serviço ideal ou ofereça seus talentos. Simples, seguro e transparente.</p>
-    <div class="hero__actions">
-      <a href="{% url 'cadastro' %}" class="btn btn--white">
-        <span class="material-symbols-rounded">rocket_launch</span> Começar Grátis
-      </a>
-      <a href="{% url 'login' %}" class="btn btn--ghost-light">
-        <span class="material-symbols-rounded">login</span> Entrar
-      </a>
-    </div>
-  </section>
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <h1>Conectando Profissionais e Clientes</h1>
+  <p>Encontre o serviço ideal ou ofereça seus talentos. Simples, seguro e transparente.</p>
+  <div class="hero__actions">
+    <a href="{% url 'cadastro' %}" class="btn btn--white">
+      <span class="material-symbols-rounded">rocket_launch</span> Começar Grátis
+    </a>
+    <a href="{% url 'login' %}" class="btn btn--ghost-light">
+      <span class="material-symbols-rounded">login</span> Entrar
+    </a>
+  </div>
+</section>
 
-  <!-- ==================== DESTAQUES ==================== -->
-  <section class="features">
-    <article class="feature glass">
-      <div class="feature__icon"><span class="material-symbols-rounded">groups</span></div>
-      <h3>Profissionais Verificados</h3>
-      <p>Cadastro validado para sua segurança</p>
-    </article>
-    <article class="feature glass">
-      <div class="feature__icon feature__icon--accent"><span class="material-symbols-rounded">verified_user</span></div>
-      <h3>Pagamento Protegido</h3>
-      <p>Sistema de taxa apenas no cancelamento (5%)</p>
-    </article>
-    <article class="feature glass">
-      <div class="feature__icon"><span class="material-symbols-rounded">chat</span></div>
-      <h3>Chat Integrado</h3>
-      <p>Negocie detalhes diretamente na plataforma</p>
-    </article>
-  </section>
+<!-- ==================== DESTAQUES ==================== -->
+<section class="features">
+  <article class="feature glass">
+    <div class="feature__icon"><span class="material-symbols-rounded">groups</span></div>
+    <h3>Profissionais Verificados</h3>
+    <p>Cadastro validado para sua segurança</p>
+  </article>
+  <article class="feature glass">
+    <div class="feature__icon feature__icon--accent"><span class="material-symbols-rounded">verified_user</span></div>
+    <h3>Pagamento Protegido</h3>
+    <p>Sistema de taxa apenas no cancelamento (5%) (A ser implementado)</p>
+  </article>
+  <article class="feature glass">
+    <div class="feature__icon"><span class="material-symbols-rounded">chat</span></div>
+    <h3>Chat Integrado</h3>
+    <p>Negocie detalhes diretamente na plataforma</p>
+  </article>
+</section>
 
-  <!-- ==================== OFERTAS RECENTES ==================== -->
-  <section>
-    <div class="section-head">
-      <h2>Ofertas Recentes</h2>
-      <a href="{% url 'ofertas' %}" class="btn btn--outline">Ver todas</a>
-    </div>
+<!-- ==================== OFERTAS RECENTES ==================== -->
+<section>
+  <div class="section-head">
+    <h2>Ofertas Recentes</h2>
+    <a href="{% url 'ofertas' %}" class="btn btn--outline">Ver todas</a>
+  </div>
 
-    <div class="cards-grid">
-      {% for oferta in ofertas %}
-        <article class="offer glass">
-          <div class="offer__media">
-            {% if oferta.imagem %}
-              <img src="{{ oferta.imagem.url }}" alt="{{ oferta.titulo }}" loading="lazy" />
-            {% else %}
-              <span class="material-symbols-rounded" style="font-size:40px">image</span>
-            {% endif %}
-          </div>
-          <div class="offer__body">
-            <h3 class="offer__title">{{ oferta.titulo }}</h3>
-            <p class="offer__desc">{{ oferta.descricao }}</p>
-            <div class="offer__meta">
-              <span class="price">
-                R$ {{ oferta.preco }} <small>/{{ oferta.unidade|default:"serviço" }}</small>
-              </span>
-              <span class="location">
-                <span class="material-symbols-rounded">location_on</span>{{ oferta.cidade }}
-              </span>
-            </div>
-            <a href="{% url 'oferta_detalhe' oferta.pk %}" class="btn btn--filled btn--block">Ver detalhes</a>
-          </div>
-        </article>
-      {% empty %}
-        <div class="empty-state">
-          <span class="material-symbols-rounded">work_off</span>
-          Nenhuma oferta disponível no momento.
+  <div class="cards-grid">
+    {% for oferta in ofertas %}
+    <article class="offer glass">
+      <div class="offer__media">
+        {% if oferta.imagem %}
+        <img src="{{ oferta.imagem.url }}" alt="{{ oferta.titulo }}" loading="lazy" />
+        {% else %}
+        <span class="material-symbols-rounded" style="font-size:40px">image</span>
+        {% endif %}
+      </div>
+      <div class="offer__body">
+        <h3 class="offer__title">{{ oferta.titulo }}</h3>
+        <p class="offer__desc">{{ oferta.descricao }}</p>
+        <div class="offer__meta">
+          <span class="price">
+            R$ {{ oferta.preco }} <small>/{{ oferta.unidade|default:"serviço" }}</small>
+          </span>
+          <span class="location">
+            <span class="material-symbols-rounded">location_on</span>{{ oferta.cidade }}
+          </span>
         </div>
-      {% endfor %}
+        <a href="{% url 'oferta_detalhe' oferta.pk %}" class="btn btn--filled btn--block">Ver detalhes</a>
+      </div>
+    </article>
+    {% empty %}
+    <div class="empty-state">
+      <span class="material-symbols-rounded">work_off</span>
+      Nenhuma oferta disponível no momento.
     </div>
-  </section>
+    {% endfor %}
+  </div>
+</section>
 
-  <!-- ==================== SOLICITAÇÕES RECENTES ==================== -->
-  <section>
-    <div class="section-head">
-      <h2>Solicitações Recentes</h2>
-      <a href="{% url 'solicitacoes' %}" class="btn btn--outline">Ver todas</a>
-    </div>
+<!-- ==================== SOLICITAÇÕES RECENTES ==================== -->
+<section>
+  <div class="section-head">
+    <h2>Solicitações Recentes</h2>
+    <a href="{% url 'solicitacoes' %}" class="btn btn--outline">Ver todas</a>
+  </div>
 
-    <div class="cards-grid">
-      {% for solicitacao in solicitacoes %}
-        <article class="offer request glass">
-          <div class="offer__body">
-            <span class="badge badge--open">{{ solicitacao.get_status_display|default:"aberta" }}</span>
-            <h3 class="offer__title">{{ solicitacao.titulo }}</h3>
-            <p class="offer__desc">{{ solicitacao.descricao }}</p>
-            <span class="price price--accent">R$ {{ solicitacao.orcamento }}</span>
-            <div class="request__info">
-              <span class="row"><span class="material-symbols-rounded">location_on</span>{{ solicitacao.cidade }}</span>
-              <span class="row"><span class="material-symbols-rounded">event</span>{{ solicitacao.prazo|date:"d/m/Y" }}</span>
-            </div>
-            <a href="{% url 'solicitacao_detalhe' solicitacao.pk %}" class="btn btn--outline btn--block">Ver detalhes</a>
-          </div>
-        </article>
-      {% empty %}
-        <div class="empty-state">
-          <span class="material-symbols-rounded">assignment_late</span>
-          Nenhuma solicitação disponível no momento.
+  <div class="cards-grid">
+    {% for solicitacao in solicitacoes %}
+    <article class="offer request glass">
+      <div class="offer__body">
+        <span class="badge badge--open">{{ solicitacao.get_status_display|default:"aberta" }}</span>
+        <h3 class="offer__title">{{ solicitacao.titulo }}</h3>
+        <p class="offer__desc">{{ solicitacao.descricao }}</p>
+        <span class="price price--accent">R$ {{ solicitacao.orcamento }}</span>
+        <div class="request__info">
+          <span class="row"><span class="material-symbols-rounded">location_on</span>{{ solicitacao.cidade }}</span>
+          <span class="row"><span class="material-symbols-rounded">event</span>{{ solicitacao.prazo|date:"d/m/Y"
+            }}</span>
         </div>
-      {% endfor %}
+        <a href="{% url 'solicitacao_detalhe' solicitacao.pk %}" class="btn btn--outline btn--block">Ver detalhes</a>
+      </div>
+    </article>
+    {% empty %}
+    <div class="empty-state">
+      <span class="material-symbols-rounded">assignment_late</span>
+      Nenhuma solicitação disponível no momento.
     </div>
-  </section>
+    {% endfor %}
+  </div>
+</section>
 
 {% endblock %}

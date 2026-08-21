@@ -10,43 +10,52 @@
     margin: 32px auto;
     padding-bottom: 32px;
   }
+
   .form-card {
     padding: 32px;
     border-radius: 20px;
   }
+
   .form-head {
     margin-bottom: 24px;
   }
+
   .form-head h1 {
     font-size: 1.75rem;
     font-weight: 700;
     color: var(--md-on-surface);
     letter-spacing: -0.5px;
   }
+
   .form-head p {
     color: var(--md-on-surface-variant);
     margin-top: 4px;
   }
+
   .form-grid {
     display: flex;
     flex-direction: column;
     gap: 20px;
   }
+
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
+
   .field {
     display: flex;
     flex-direction: column;
     gap: 6px;
   }
+
   .field label {
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--md-on-surface-variant);
   }
+
   .field input,
   .field select,
   .field textarea {
@@ -60,10 +69,12 @@
     font-size: 0.95rem;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
+
   .field textarea {
-    min-height: 120px;
+    min-height: 60px;
     resize: vertical;
   }
+
   .field input:focus,
   .field select:focus,
   .field textarea:focus {
@@ -71,6 +82,7 @@
     border-color: var(--md-primary);
     box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.18);
   }
+
   .field .errorlist {
     list-style: none;
     padding: 0;
@@ -78,17 +90,31 @@
     color: var(--md-error);
     font-size: 0.8rem;
   }
+
   .form-actions {
     display: flex;
     gap: 12px;
     justify-content: flex-end;
     margin-top: 8px;
   }
+
   @media (max-width: 640px) {
-    .form-row { grid-template-columns: 1fr; }
-    .form-card { padding: 24px; }
-    .form-actions { flex-direction: column-reverse; }
-    .form-actions .btn { width: 100%; justify-content: center; }
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .form-card {
+      padding: 24px;
+    }
+
+    .form-actions {
+      flex-direction: column-reverse;
+    }
+
+    .form-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
   }
 </style>
 {% endblock %}
@@ -103,10 +129,11 @@
       <p>Descreva o serviço que você precisa para receber propostas de profissionais.</p>
     </div>
 
+
     {% if form.non_field_errors %}
-      <ul class="errorlist">
-        {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
-      </ul>
+    <ul class="errorlist">
+      {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+    </ul>
     {% endif %}
 
     <div class="form-grid">
@@ -149,16 +176,17 @@
       </div>
     </div>
 
-    <div class="form-actions">
-      <a class="btn btn--outline ripple" href="{% url 'solicitacoes' %}">
+        <div class="form-actions">
+      <a class="btn btn--outline" href="{% url 'solicitacoes' %}">
         <span class="material-symbols-rounded">close</span>
         Cancelar
       </a>
-      <button class="btn btn--filled ripple" type="submit">
+      <button class="btn btn--filled" type="submit">
         <span class="material-symbols-rounded">check</span>
         Publicar solicitação
       </button>
     </div>
+
   </form>
 </div>
 {% endblock %}

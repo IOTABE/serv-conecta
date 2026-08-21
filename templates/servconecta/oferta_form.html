@@ -61,7 +61,7 @@
     transition: border-color 0.2s, box-shadow 0.2s;
   }
   .field textarea {
-    min-height: 80px;
+    min-height: 72px;
     resize: vertical;
   }
   .field input:focus,
@@ -156,11 +156,11 @@
     </div>
 
     <div class="form-actions">
-      <a class="btn btn--outline ripple" href="{% url 'ofertas' %}">
+      <a class="btn btn--outline" href="{% url 'ofertas' %}">
         <span class="material-symbols-rounded">close</span>
         Cancelar
       </a>
-      <button class="btn btn--filled ripple" type="submit">
+      <button class="btn btn--filled" type="submit">
         <span class="material-symbols-rounded">check</span>
         Publicar oferta
       </button>
