@@ -1,0 +1,170 @@
+{% extends "servconecta/base.html" %}
+
+{% block title %}Nova oferta &middot; ServConecta{% endblock %}
+{% block description %}Publique uma nova oferta de serviço na ServConecta.{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-shell {
+    max-width: 720px;
+    margin: 32px auto;
+    padding-bottom: 32px;
+  }
+  .form-card {
+    padding: 32px;
+    border-radius: 20px;
+  }
+  .form-head {
+    margin-bottom: 24px;
+  }
+  .form-head h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--md-on-surface);
+    letter-spacing: -0.5px;
+  }
+  .form-head p {
+    color: var(--md-on-surface-variant);
+    margin-top: 4px;
+  }
+  .form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--md-on-surface-variant);
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-input-bg);
+    color: var(--md-on-surface);
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--md-primary);
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.18);
+  }
+  .field .errorlist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    color: var(--md-error);
+    font-size: 0.8rem;
+  }
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+  @media (max-width: 640px) {
+    .form-row { grid-template-columns: 1fr; }
+    .form-card { padding: 24px; }
+    .form-actions { flex-direction: column-reverse; }
+    .form-actions .btn { width: 100%; justify-content: center; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-shell">
+  <form class="glass form-card" method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    <div class="form-head">
+      <h1>Nova oferta</h1>
+      <p>Descreva o serviço que você oferece para os clientes encontrarem você.</p>
+    </div>
+
+    {% if form.non_field_errors %}
+      <ul class="errorlist">
+        {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+
+    <div class="form-grid">
+      <div class="field">
+        <label for="{{ form.titulo.id_for_label }}">Título</label>
+        {{ form.titulo }}
+        {{ form.titulo.errors }}
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label for="{{ form.categoria.id_for_label }}">Categoria</label>
+          {{ form.categoria }}
+          {{ form.categoria.errors }}
+        </div>
+        <div class="field">
+          <label for="{{ form.cidade.id_for_label }}">Cidade</label>
+          {{ form.cidade }}
+          {{ form.cidade.errors }}
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="{{ form.descricao.id_for_label }}">Descrição</label>
+        {{ form.descricao }}
+        {{ form.descricao.errors }}
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label for="{{ form.preco.id_for_label }}">Preço (R$)</label>
+          {{ form.preco }}
+          {{ form.preco.errors }}
+        </div>
+        <div class="field">
+          <label for="{{ form.unidade.id_for_label }}">Unidade</label>
+          {{ form.unidade }}
+          {{ form.unidade.errors }}
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="{{ form.imagem.id_for_label }}">Imagem</label>
+        {{ form.imagem }}
+        {{ form.imagem.errors }}
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <a class="btn btn--outline ripple" href="{% url 'ofertas' %}">
+        <span class="material-symbols-rounded">close</span>
+        Cancelar
+      </a>
+      <button class="btn btn--filled ripple" type="submit">
+        <span class="material-symbols-rounded">check</span>
+        Publicar oferta
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

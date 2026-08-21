@@ -1,0 +1,106 @@
+{% extends "servconecta/base.html" %}
+
+{% block title %}Entrar — ServConecta{% endblock %}
+{% block description %}Acesse sua conta ServConecta.{% endblock %}
+
+{% block extra_head %}
+<style>
+  .auth-wrap {
+    min-height: calc(100vh - 200px);
+    display: grid;
+    place-items: center;
+    padding: 40px 0;
+  }
+  .auth-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 36px 32px;
+  }
+  .auth-head { text-align: center; margin-bottom: 26px; }
+  .auth-head .material-symbols-rounded {
+    font-size: 40px; color: var(--primary);
+    background: var(--primary-050); border-radius: 50%;
+    width: 64px; height: 64px; display: grid; place-items: center;
+    margin: 0 auto 14px; box-shadow: inset 0 0 0 1px rgba(26,86,219,.12);
+  }
+  .auth-head h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 900; }
+  .auth-head p { margin: 0; color: var(--ink-soft); font-size: .92rem; }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block; margin-bottom: 6px;
+    font-size: .82rem; font-weight: 500; color: var(--ink-soft);
+  }
+  .field input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--line);
+    background: rgba(255,255,255,.7);
+    font-family: inherit; font-size: .95rem; color: var(--ink);
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(26,86,219,.12);
+  }
+
+  .form-errors {
+    background: rgba(220,38,38,.08);
+    border: 1px solid rgba(220,38,38,.25);
+    color: #b91c1c;
+    padding: 10px 14px; border-radius: var(--radius-sm);
+    font-size: .85rem; margin-bottom: 18px;
+  }
+  .form-errors ul { margin: 0; padding-left: 18px; }
+
+  .auth-foot { margin-top: 20px; text-align: center; font-size: .9rem; color: var(--ink-soft); }
+  .auth-foot a { color: var(--primary); font-weight: 500; }
+  .auth-foot a:hover { text-decoration: underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card glass">
+    <div class="auth-head">
+      <span class="material-symbols-rounded">lock</span>
+      <h1>Bem-vindo de volta</h1>
+      <p>Entre para continuar no ServConecta</p>
+    </div>
+
+    {% if form.errors %}
+      <div class="form-errors">
+        <ul>
+          {% for field in form %}{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}{% endfor %}
+          {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'login' %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}" />
+
+      <div class="field">
+        <label for="id_username">Usuário ou e-mail</label>
+        <input type="text" name="username" id="id_username" autocomplete="username" required autofocus />
+      </div>
+
+      <div class="field">
+        <label for="id_password">Senha</label>
+        <input type="password" name="password" id="id_password" autocomplete="current-password" required />
+      </div>
+
+      <button type="submit" class="btn btn--filled btn--block">
+        <span class="material-symbols-rounded">login</span> Entrar
+      </button>
+    </form>
+
+    <div class="auth-foot">
+      Não tem conta? <a href="{% url 'cadastro' %}">Cadastre-se grátis</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

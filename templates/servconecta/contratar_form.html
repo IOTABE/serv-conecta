@@ -1,0 +1,156 @@
+{% extends "servconecta/base.html" %}
+{% block title %}Contratar: {{ oferta.titulo }} — ServConecta{% endblock %}
+{% block nav_ofertas %}nav-link--active{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-wrap {
+    display: grid;
+    place-items: center;
+    padding: 40px 0;
+  }
+  .form-card {
+    width: 100%;
+    max-width: 600px;
+    padding: 36px 32px;
+  }
+  .form-head { margin-bottom: 24px; }
+  .form-head .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 999px;
+    background: rgba(5,150,105,.10); color: var(--accent);
+    font-size: .78rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .4px;
+    margin-bottom: 12px;
+  }
+  .form-head h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 900; }
+  .form-head p  { margin: 0; color: var(--ink-soft); font-size: .92rem; }
+
+  .oferta-ref {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-radius: var(--radius-sm);
+    background: rgba(5,150,105,.07);
+    border: 1px solid rgba(5,150,105,.18);
+    margin-bottom: 24px;
+  }
+  .oferta-ref .material-symbols-rounded { color: var(--accent); }
+  .oferta-ref strong { font-size: .9rem; color: var(--accent); }
+  .oferta-ref span.price { font-weight: 900; font-size: 1rem; color: var(--primary); margin-left: auto; }
+
+  .field { margin-bottom: 18px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field label {
+    display: block; margin-bottom: 6px;
+    font-size: .82rem; font-weight: 600; color: var(--ink-soft);
+  }
+  .field input, .field textarea, .field select {
+    width: 100%; padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--line);
+    background: rgba(255,255,255,.7);
+    font-family: inherit; font-size: .95rem; color: var(--ink);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(26,86,219,.12);
+  }
+  .field textarea { resize: vertical; }
+  .field .field-error { margin: 6px 0 0; font-size: .78rem; color: #b91c1c; }
+  .form-actions { display: flex; gap: 10px; margin-top: 24px; }
+
+  .breadcrumb {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 20px; color: var(--ink-soft); font-size: .88rem; font-weight: 500;
+  }
+  .breadcrumb:hover { color: var(--primary); }
+  .breadcrumb .material-symbols-rounded { font-size: 20px; }
+
+  @media (max-width: 520px) { .field-row { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'oferta_detalhe' oferta.pk %}" class="breadcrumb">
+  <span class="material-symbols-rounded">arrow_back</span> Voltar para a oferta
+</a>
+
+<div class="form-wrap">
+  <div class="form-card glass">
+    <div class="form-head">
+      <div class="pill">
+        <span class="material-symbols-rounded">handshake</span> Contratar Serviço
+      </div>
+      <h1>Criar Solicitação</h1>
+      <p>Confirme os detalhes e crie uma solicitação para este serviço.</p>
+    </div>
+
+    <div class="oferta-ref">
+      <span class="material-symbols-rounded">work</span>
+      <strong>{{ oferta.titulo }}</strong>
+      <span class="price">R$ {{ oferta.preco }} / {{ oferta.unidade }}</span>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="field">
+        <label for="id_titulo">Título da solicitação</label>
+        <input type="text" name="titulo" id="id_titulo"
+               value="{{ form.titulo.value|default:'' }}" required />
+        {% for e in form.titulo.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="field">
+        <label for="id_descricao">Descrição da sua necessidade</label>
+        <textarea name="descricao" id="id_descricao" rows="4">{{ form.descricao.value|default:'' }}</textarea>
+        {% for e in form.descricao.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="id_orcamento">Orçamento (R$)</label>
+          <input type="number" name="orcamento" id="id_orcamento" step="0.01" min="0"
+                 value="{{ form.orcamento.value|default:'' }}" />
+          {% for e in form.orcamento.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+        </div>
+        <div class="field">
+          <label for="id_cidade">Cidade</label>
+          <input type="text" name="cidade" id="id_cidade"
+                 value="{{ form.cidade.value|default:'' }}" required />
+          {% for e in form.cidade.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="id_categoria">Categoria</label>
+          <select name="categoria" id="id_categoria">
+            <option value="">— Selecione —</option>
+            {% for cat in form.categoria.field.queryset %}
+              <option value="{{ cat.pk }}" {% if form.categoria.value == cat.pk|stringformat:"s" %}selected{% endif %}>
+                {{ cat.nome }}
+              </option>
+            {% endfor %}
+          </select>
+          {% for e in form.categoria.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+        </div>
+        <div class="field">
+          <label for="id_prazo">Prazo desejado</label>
+          <input type="date" name="prazo" id="id_prazo"
+                 value="{{ form.prazo.value|default:'' }}" />
+          {% for e in form.prazo.errors %}<p class="field-error">{{ e }}</p>{% endfor %}
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn--filled">
+          <span class="material-symbols-rounded">handshake</span> Contratar serviço
+        </button>
+        <a href="{% url 'oferta_detalhe' oferta.pk %}" class="btn btn--outline">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

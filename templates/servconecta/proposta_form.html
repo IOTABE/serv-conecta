@@ -1,0 +1,127 @@
+{% extends "servconecta/base.html" %}
+{% block title %}Enviar Proposta — ServConecta{% endblock %}
+{% block nav_solicitacoes %}nav-link--active{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-wrap {
+    min-height: calc(100vh - 200px);
+    display: grid;
+    place-items: center;
+    padding: 40px 0;
+  }
+  .form-card {
+    width: 100%;
+    max-width: 560px;
+    padding: 36px 32px;
+  }
+  .form-head { margin-bottom: 24px; }
+  .form-head .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 999px;
+    background: var(--primary-050); color: var(--primary);
+    font-size: .78rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .4px;
+    margin-bottom: 12px;
+  }
+  .form-head h1 { margin: 0 0 4px; font-size: 1.5rem; font-weight: 900; }
+  .form-head p  { margin: 0; color: var(--ink-soft); font-size: .92rem; }
+
+  .solicitacao-ref {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-radius: var(--radius-sm);
+    background: var(--primary-050);
+    border: 1px solid var(--primary-100);
+    margin-bottom: 24px;
+  }
+  .solicitacao-ref .material-symbols-rounded { color: var(--primary); font-size: 22px; }
+  .solicitacao-ref strong { font-size: .9rem; color: var(--primary); }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block; margin-bottom: 6px;
+    font-size: .82rem; font-weight: 600; color: var(--ink-soft);
+  }
+  .field input, .field textarea {
+    width: 100%; padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--line);
+    background: rgba(255,255,255,.7);
+    font-family: inherit; font-size: .95rem; color: var(--ink);
+    transition: border-color .2s, box-shadow .2s;
+    resize: vertical;
+  }
+  .field input:focus, .field textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(26,86,219,.12);
+  }
+  .field .field-error { margin: 6px 0 0; font-size: .78rem; color: #b91c1c; }
+  .form-actions { display: flex; gap: 10px; margin-top: 24px; }
+
+  .breadcrumb {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 20px; color: var(--ink-soft); font-size: .88rem; font-weight: 500;
+  }
+  .breadcrumb:hover { color: var(--primary); }
+  .breadcrumb .material-symbols-rounded { font-size: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'solicitacao_detalhe' solicitacao.pk %}" class="breadcrumb">
+  <span class="material-symbols-rounded">arrow_back</span> Voltar para a solicitação
+</a>
+
+<div class="form-wrap">
+  <div class="form-card glass">
+    <div class="form-head">
+      <div class="pill">
+        <span class="material-symbols-rounded">send</span> Nova Proposta
+      </div>
+      <h1>Enviar Proposta</h1>
+      <p>Apresente sua solução para esta solicitação.</p>
+    </div>
+
+    <div class="solicitacao-ref">
+      <span class="material-symbols-rounded">assignment</span>
+      <strong>{{ solicitacao.titulo }}</strong>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="form-errors" style="{% if message.tags == 'success' %}background:rgba(5,150,105,.08);border-color:rgba(5,150,105,.25);color:#047857;{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="field">
+        <label for="id_valor">Valor da proposta (R$)</label>
+        <input type="number" name="valor" id="id_valor" step="0.01" min="0"
+               value="{{ form.valor.value|default:'' }}" required />
+        {% for error in form.valor.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="field">
+        <label for="id_descricao">Sua proposta</label>
+        <textarea name="descricao" id="id_descricao" rows="5"
+                  placeholder="Descreva sua qualificação, prazo estimado e como você irá atender a solicitação...">{{ form.descricao.value|default:'' }}</textarea>
+        {% for error in form.descricao.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn--filled">
+          <span class="material-symbols-rounded">send</span> Enviar proposta
+        </button>
+        <a href="{% url 'solicitacao_detalhe' solicitacao.pk %}" class="btn btn--outline">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "servconecta/base.html" %}
+
+{% block title %}Ofertas — ServConecta{% endblock %}
+{% block description %}Explore ofertas de serviços de profissionais verificados na ServConecta.{% endblock %}
+{% block nav_ofertas %}nav-link--active{% endblock %}
+
+{% block content %}
+
+  <!-- ==================== CABEÇALHO ==================== -->
+  <section class="page-head">
+    <h1>Ofertas de Serviços</h1>
+    <p>Encontre o profissional ideal para o que você precisa.</p>
+
+    <form method="get" class="filter-bar" role="search">
+      <label class="field">
+        <span class="material-symbols-rounded">search</span>
+        <input type="search" name="q" value="{{ request.GET.q|default:'' }}"
+               placeholder="Buscar serviço (ex.: formatação, jardinagem...)" />
+      </label>
+      <label class="field field--sm">
+        <span class="material-symbols-rounded">location_on</span>
+        <input type="text" name="cidade" value="{{ request.GET.cidade|default:'' }}" placeholder="Cidade" />
+      </label>
+      <button type="submit" class="btn btn--white">
+        <span class="material-symbols-rounded">tune</span> Filtrar
+      </button>
+    </form>
+  </section>
+
+  <!-- ==================== LISTA DE OFERTAS ==================== -->
+  <section>
+    <div class="section-head">
+      <h2>{{ total }} oferta{{ total|pluralize }} encontrada{{ total|pluralize }}</h2>
+      {% if user.is_authenticated %}
+        <a href="{% url 'oferta_criar' %}" class="btn btn--filled">
+          <span class="material-symbols-rounded">add</span> Nova oferta
+        </a>
+      {% endif %}
+    </div>
+
+    <div class="cards-grid">
+      {% for oferta in ofertas %}
+        <article class="offer glass">
+          <div class="offer__media">
+            {% if oferta.imagem %}
+              <img src="{{ oferta.imagem.url }}" alt="{{ oferta.titulo }}" loading="lazy" />
+            {% else %}
+              <span class="material-symbols-rounded" style="font-size:40px">image</span>
+            {% endif %}
+          </div>
+          <div class="offer__body">
+            <h3 class="offer__title">{{ oferta.titulo }}</h3>
+            <p class="offer__desc">{{ oferta.descricao }}</p>
+            <div class="offer__meta">
+              <span class="price">
+                R$ {{ oferta.preco }} <small>/{{ oferta.unidade|default:"serviço" }}</small>
+              </span>
+              <span class="location">
+                <span class="material-symbols-rounded">location_on</span>{{ oferta.cidade }}
+              </span>
+            </div>
+            <a href="{% url 'oferta_detalhe' oferta.pk %}" class="btn btn--filled btn--block">Ver detalhes</a>
+          </div>
+        </article>
+      {% empty %}
+        <div class="empty-state">
+          <span class="material-symbols-rounded">work_off</span>
+          Nenhuma oferta encontrada. Tente ajustar os filtros de busca.
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+      <nav class="pagination" aria-label="Paginação">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}" class="btn btn--outline">
+            <span class="material-symbols-rounded">chevron_left</span> Anterior
+          </a>
+        {% endif %}
+        <span class="pagination__info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}" class="btn btn--outline">
+            Próxima <span class="material-symbols-rounded">chevron_right</span>
+          </a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  </section>
+
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .filter-bar {
+    display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px;
+  }
+  .field {
+    display: flex; align-items: center; gap: 8px; flex: 1; min-width: 180px;
+    padding: 0 14px; border-radius: 999px;
+    background: rgba(255,255,255,.9);
+    box-shadow: var(--e1);
+  }
+  .field--sm { flex: 0 1 220px; }
+  .field .material-symbols-rounded { color: var(--ink-faint); font-size: 20px; }
+  .field input {
+    flex: 1; border: 0; outline: 0; background: transparent;
+    font-family: inherit; font-size: .92rem; color: var(--ink);
+    padding: 11px 0;
+  }
+  .field input::placeholder { color: var(--ink-faint); }
+
+  .pagination {
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; margin-top: 32px;
+  }
+  .pagination__info { color: var(--ink-soft); font-size: .9rem; font-weight: 500; }
+
+  @media (max-width: 520px) {
+    .filter-bar { flex-direction: column; }
+    .field, .field--sm { flex: 1 1 auto; width: 100%; }
+    .filter-bar .btn { width: 100%; }
+  }
+</style>
+{% endblock %}

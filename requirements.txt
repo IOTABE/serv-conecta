@@ -1,0 +1,3 @@
+Django>=5.0,<6.0
+# Necessario para o ImageField das ofertas (upload de imagem)
+Pillow>=10.0

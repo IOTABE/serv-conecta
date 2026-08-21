@@ -1,0 +1,185 @@
+{% extends "servconecta/base.html" %}
+
+{% block title %}{{ solicitacao.titulo }} — ServConecta{% endblock %}
+{% block description %}{{ solicitacao.descricao|truncatechars:150 }}{% endblock %}
+{% block nav_solicitacoes %}nav-link--active{% endblock %}
+
+{% block extra_head %}
+<style>
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 24px;
+    align-items: start;
+    margin-top: 24px;
+  }
+  .detail-body { padding: 28px; }
+  .detail-body h1 { margin: 8px 0 12px; font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 900; letter-spacing: -.3px; }
+  .detail-body h2 { margin: 28px 0 8px; font-size: 1.05rem; font-weight: 700; }
+  .detail-body p { margin: 0; color: var(--ink-soft); white-space: pre-line; }
+
+  .badge--status {
+    align-self: flex-start;
+    background: var(--accent);
+  }
+
+  .facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 24px; }
+  .fact {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-radius: var(--radius-sm);
+    background: rgba(255,255,255,.5);
+    border: 1px solid var(--glass-border);
+  }
+  .fact__icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--primary-050); color: var(--primary);
+  }
+  .fact__label { font-size: .74rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .4px; }
+  .fact__value { font-weight: 700; font-size: .95rem; }
+
+  .detail-aside { padding: 24px; position: sticky; top: 84px; }
+  .detail-aside .price { font-size: 1.8rem; color: var(--accent); }
+  .detail-aside .price small { display: block; font-size: .8rem; margin-top: 2px; color: var(--ink-faint); }
+  .aside-divider { height: 1px; background: var(--line); margin: 18px 0; border: 0; }
+  .aside-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+
+  .breadcrumb {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 20px; color: var(--ink-soft); font-size: .88rem; font-weight: 500;
+  }
+  .breadcrumb:hover { color: var(--primary); }
+  .breadcrumb .material-symbols-rounded { font-size: 20px; }
+
+  @media (max-width: 860px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .detail-aside { position: static; }
+    .facts { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <a href="{% url 'solicitacoes' %}" class="breadcrumb">
+    <span class="material-symbols-rounded">arrow_back</span> Voltar para solicitações
+  </a>
+
+  <div class="detail-grid">
+    <article class="detail-main glass">
+      <div class="detail-body">
+        <span class="badge badge--status">{{ solicitacao.status|default:"Aberta" }}</span>
+        <h1>{{ solicitacao.titulo }}</h1>
+
+        <h2>Descrição da necessidade</h2>
+        <p>{{ solicitacao.descricao|default:"Sem descrição informada." }}</p>
+
+        <div class="facts">
+          <div class="fact">
+            <div class="fact__icon"><span class="material-symbols-rounded">location_on</span></div>
+            <div>
+              <div class="fact__label">Local</div>
+              <div class="fact__value">{{ solicitacao.cidade|default:"A combinar" }}</div>
+            </div>
+          </div>
+          <div class="fact">
+            <div class="fact__icon"><span class="material-symbols-rounded">event</span></div>
+            <div>
+              <div class="fact__label">Prazo</div>
+              <div class="fact__value">{{ solicitacao.prazo|default:"Flexível" }}</div>
+            </div>
+          </div>
+          {% if solicitacao.categoria %}
+          <div class="fact">
+            <div class="fact__icon"><span class="material-symbols-rounded">category</span></div>
+            <div>
+              <div class="fact__label">Categoria</div>
+              <div class="fact__value">{{ solicitacao.categoria }}</div>
+            </div>
+          </div>
+          {% endif %}
+          <div class="fact">
+            <div class="fact__icon"><span class="material-symbols-rounded">schedule</span></div>
+            <div>
+              <div class="fact__label">Publicada em</div>
+              <div class="fact__value">{{ solicitacao.criado_em|date:"d/m/Y"|default:"—" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <aside class="detail-aside glass">
+      <div class="price">
+        R$ {{ solicitacao.orcamento|default:"0,00" }}
+        <small>orçamento estimado</small>
+      </div>
+
+      <hr class="aside-divider" />
+
+      <div class="aside-actions">
+        {% if user.is_authenticated %}
+          {% if user == solicitacao.cliente %}
+            {# Cliente vê botão de chat (lista de conversas) #}
+            <a href="{% url 'chat' solicitacao.pk %}" class="btn btn--filled btn--block">
+              <span class="material-symbols-rounded">chat</span> Ver conversas
+            </a>
+          {% elif proposta_do_usuario %}
+            {# Profissional já enviou proposta — exibe um resumo #}
+            <div style="padding:12px 14px;border-radius:var(--radius-sm);background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);margin-bottom:10px;">
+              <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--accent);margin-bottom:4px;">Sua proposta</div>
+              <div style="font-size:1.1rem;font-weight:900;color:var(--accent);">R$ {{ proposta_do_usuario.valor }}</div>
+              <div style="font-size:.82rem;color:var(--ink-soft);margin-top:4px;">{{ proposta_do_usuario.descricao|truncatechars:80 }}</div>
+            </div>
+            <a href="{% url 'chat' solicitacao.pk %}" class="btn btn--outline btn--block">
+              <span class="material-symbols-rounded">chat</span> Conversar com o cliente
+            </a>
+          {% else %}
+            {# Profissional ainda não enviou proposta #}
+            <a href="{% url 'proposta_criar' solicitacao.pk %}" class="btn btn--filled btn--block">
+              <span class="material-symbols-rounded">send</span> Enviar proposta
+            </a>
+            <a href="{% url 'chat' solicitacao.pk %}" class="btn btn--outline btn--block">
+              <span class="material-symbols-rounded">chat</span> Conversar
+            </a>
+          {% endif %}
+        {% else %}
+          <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn--filled btn--block">
+            <span class="material-symbols-rounded">login</span> Entre para enviar proposta
+          </a>
+        {% endif %}
+      </div>
+    </aside>
+  </div>
+
+  {# Lista de propostas recebidas — visível apenas para o dono da solicitação #}
+  {% if propostas %}
+    <section style="margin-top:32px;">
+      <div class="section-head">
+        <h2>Propostas recebidas</h2>
+        <span style="color:var(--ink-soft);font-size:.9rem;">{{ propostas|length }} proposta{{ propostas|length|pluralize }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:16px;">
+        {% for p in propostas %}
+          <div class="glass" style="padding:20px 24px;border-radius:var(--radius);display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <div style="width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--primary);color:#fff;font-weight:700;font-size:1rem;flex-shrink:0;">
+              {{ p.profissional.get_short_name|default:p.profissional.username|slice:":1"|upper }}
+            </div>
+            <div style="flex:1;min-width:180px;">
+              <div style="font-weight:700;">{{ p.profissional.get_full_name|default:p.profissional.username }}</div>
+              <div style="font-size:.85rem;color:var(--ink-soft);margin-top:2px;">{{ p.descricao|truncatechars:100 }}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:1.2rem;font-weight:900;color:var(--primary);">R$ {{ p.valor }}</div>
+              <div style="font-size:.75rem;color:var(--ink-faint);">{{ p.criado_em|date:"d/m/Y" }}</div>
+            </div>
+            <a href="{% url 'chat_com' solicitacao.pk p.profissional.pk %}" class="btn btn--outline">
+              <span class="material-symbols-rounded">chat</span> Conversar
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+{% endblock %}
+
