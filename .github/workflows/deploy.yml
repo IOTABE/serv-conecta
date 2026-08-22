@@ -1,0 +1,59 @@
+name: Deploy Automático para Produção
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: Deploy via SSH no Servidor
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Conectar via SSH e Executar Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd /www/wwwroot/serv-conecta
+            echo ">>> Atualizando repositório Git..."
+            git pull origin master
+
+            echo ">>> Instalando/Atualizando dependências..."
+            if command -v uv &> /dev/null; then
+                uv sync
+                echo ">>> Executando migrações..."
+                uv run manage.py migrate --noinput
+                echo ">>> Coletando arquivos estáticos..."
+                uv run manage.py collectstatic --noinput
+            else
+                if [ -d "venv" ]; then
+                    source venv/bin/activate
+                elif [ -d ".venv" ]; then
+                    source .venv/bin/activate
+                fi
+                pip install -r requirements.txt
+                echo ">>> Executando migrações..."
+                python manage.py migrate --noinput
+                echo ">>> Coletando arquivos estáticos..."
+                python manage.py collectstatic --noinput
+            fi
+
+            echo ">>> Reiniciando o serviço Gunicorn (aaPanel Supervisor / systemd)..."
+            if command -v supervisorctl &> /dev/null; then
+                echo "Reiniciando via Supervisor..."
+                supervisorctl restart serv-conecta || supervisorctl restart servconecta || supervisorctl restart all
+            elif systemctl is-active --quiet servconecta; then
+                echo "Reiniciando via systemd..."
+                sudo systemctl restart servconecta
+            else
+                echo "Atualizando timestamp em tmp/restart.txt..."
+                mkdir -p tmp && touch tmp/restart.txt
+            fi
+
+            echo ">>> Deploy finalizado com sucesso!"
+
