@@ -1,3 +1,7 @@
 Django>=5.0,<6.0
 # Necessario para o ImageField das ofertas (upload de imagem)
 Pillow>=10.0
+# Serve arquivos estaticos em producao (comprimidos e com cache)
+whitenoise>=6.7,<7
+# Driver PostgreSQL usado quando DJANGO_ENV=producao
+psycopg[binary]>=3.2,<4
