@@ -85,7 +85,12 @@
 
       <div class="detail-body">
         <div class="chips">
-          {% if oferta.categoria %}<span class="chip"><span class="material-symbols-rounded">category</span>{{ oferta.categoria }}</span>{% endif %}
+          {% if oferta.categoria %}
+            <span class="chip">
+              <span class="material-symbols-rounded">category</span>
+              {{ oferta.categoria.nome }}{% if oferta.subcategoria %} › {{ oferta.subcategoria.nome }}{% endif %}
+            </span>
+          {% endif %}
           <span class="chip"><span class="material-symbols-rounded">location_on</span>{{ oferta.cidade|default:"A combinar" }}</span>
           <span class="chip"><span class="material-symbols-rounded">verified</span>Profissional verificado</span>
         </div>

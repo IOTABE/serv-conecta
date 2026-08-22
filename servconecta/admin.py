@@ -1,7 +1,13 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Categoria, Oferta, Solicitacao, Proposta, MensagemChat
+from .models import Categoria, Subcategoria, Oferta, Solicitacao, Proposta, MensagemChat
+
+
+class SubcategoriaInline(admin.TabularInline):
+    model = Subcategoria
+    extra = 1
+    prepopulated_fields = {"slug": ("nome",)}
 
 
 @admin.register(Categoria)
@@ -10,6 +16,16 @@ class CategoriaAdmin(admin.ModelAdmin):
     search_fields = ("nome",)
     prepopulated_fields = {"slug": ("nome",)}
     ordering = ("nome",)
+    inlines = [SubcategoriaInline]
+
+
+@admin.register(Subcategoria)
+class SubcategoriaAdmin(admin.ModelAdmin):
+    list_display = ("nome", "categoria", "slug")
+    list_filter = ("categoria",)
+    search_fields = ("nome", "categoria__nome")
+    prepopulated_fields = {"slug": ("nome",)}
+    ordering = ("categoria__nome", "nome")
 
 
 @admin.register(Oferta)
@@ -18,21 +34,22 @@ class OfertaAdmin(admin.ModelAdmin):
         "titulo",
         "prestador",
         "categoria",
+        "subcategoria",
         "preco_formatado",
         "cidade",
         "prestador_verificado",
         "criado_em",
     )
-    list_filter = ("prestador_verificado", "categoria", "cidade", "criado_em")
+    list_filter = ("prestador_verificado", "categoria", "subcategoria", "cidade", "criado_em")
     list_editable = ("prestador_verificado",)
     search_fields = ("titulo", "descricao", "cidade", "prestador__username")
-    autocomplete_fields = ("prestador", "categoria")
+    autocomplete_fields = ("prestador", "categoria", "subcategoria")
     date_hierarchy = "criado_em"
     readonly_fields = ("criado_em", "atualizado_em", "imagem_preview")
     ordering = ("-criado_em",)
     fieldsets = (
         ("Informações principais", {
-            "fields": ("prestador", "categoria", "titulo", "descricao"),
+            "fields": ("prestador", "categoria", "subcategoria", "titulo", "descricao"),
         }),
         ("Preço e localização", {
             "fields": ("preco", "unidade", "cidade"),
@@ -66,23 +83,24 @@ class SolicitacaoAdmin(admin.ModelAdmin):
         "titulo",
         "cliente",
         "categoria",
+        "subcategoria",
         "orcamento_formatado",
         "cidade",
         "prazo",
         "status",
         "criado_em",
     )
-    list_filter = ("status", "categoria", "cidade", "criado_em")
+    list_filter = ("status", "categoria", "subcategoria", "cidade", "criado_em")
     list_editable = ("status",)
     search_fields = ("titulo", "descricao", "cidade", "cliente__username")
-    autocomplete_fields = ("cliente", "categoria")
+    autocomplete_fields = ("cliente", "categoria", "subcategoria")
     date_hierarchy = "criado_em"
     readonly_fields = ("criado_em", "atualizado_em")
     ordering = ("-criado_em",)
     actions = ("marcar_como_concluida", "marcar_como_cancelada")
     fieldsets = (
         ("Informações principais", {
-            "fields": ("cliente", "categoria", "titulo", "descricao", "status"),
+            "fields": ("cliente", "categoria", "subcategoria", "titulo", "descricao", "status"),
         }),
         ("Orçamento e prazo", {
             "fields": ("orcamento", "cidade", "prazo"),

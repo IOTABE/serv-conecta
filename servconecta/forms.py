@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import Oferta, Solicitacao, Proposta
+from .models import Oferta, Solicitacao, Proposta, Subcategoria
 
 User = get_user_model()
 
@@ -30,12 +30,26 @@ class OfertaForm(forms.ModelForm):
         fields = [
             "titulo",
             "categoria",
+            "subcategoria",
             "descricao",
             "preco",
             "unidade",
             "cidade",
             "imagem",
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["subcategoria"].queryset = Subcategoria.objects.none()
+
+        if "categoria" in self.data:
+            try:
+                categoria_id = int(self.data.get("categoria"))
+                self.fields["subcategoria"].queryset = Subcategoria.objects.filter(categoria_id=categoria_id).order_by("nome")
+            except (ValueError, TypeError):
+                pass
+        elif self.instance.pk and self.instance.categoria:
+            self.fields["subcategoria"].queryset = self.instance.categoria.subcategorias.order_by("nome")
 
 
 class SolicitacaoForm(forms.ModelForm):
@@ -44,6 +58,7 @@ class SolicitacaoForm(forms.ModelForm):
         fields = [
             "titulo",
             "categoria",
+            "subcategoria",
             "descricao",
             "orcamento",
             "cidade",
@@ -52,6 +67,19 @@ class SolicitacaoForm(forms.ModelForm):
         widgets = {
             "prazo": forms.DateInput(attrs={"type": "date"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["subcategoria"].queryset = Subcategoria.objects.none()
+
+        if "categoria" in self.data:
+            try:
+                categoria_id = int(self.data.get("categoria"))
+                self.fields["subcategoria"].queryset = Subcategoria.objects.filter(categoria_id=categoria_id).order_by("nome")
+            except (ValueError, TypeError):
+                pass
+        elif self.instance.pk and self.instance.categoria:
+            self.fields["subcategoria"].queryset = self.instance.categoria.subcategorias.order_by("nome")
 
 
 class PropostaForm(forms.ModelForm):

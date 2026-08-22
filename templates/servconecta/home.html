@@ -56,6 +56,13 @@
         {% endif %}
       </div>
       <div class="offer__body">
+        {% if oferta.categoria %}
+          <div class="cat-badge">
+            <span class="material-symbols-rounded">label</span>
+            {{ oferta.categoria.nome }}
+            {% if oferta.subcategoria %} › {{ oferta.subcategoria.nome }}{% endif %}
+          </div>
+        {% endif %}
         <h3 class="offer__title">{{ oferta.titulo }}</h3>
         <p class="offer__desc">{{ oferta.descricao }}</p>
         <div class="offer__meta">
@@ -89,6 +96,13 @@
     {% for solicitacao in solicitacoes %}
     <article class="offer request glass">
       <div class="offer__body">
+        {% if solicitacao.categoria %}
+          <div class="cat-badge">
+            <span class="material-symbols-rounded">label</span>
+            {{ solicitacao.categoria.nome }}
+            {% if solicitacao.subcategoria %} › {{ solicitacao.subcategoria.nome }}{% endif %}
+          </div>
+        {% endif %}
         <span class="badge badge--open">{{ solicitacao.get_status_display|default:"aberta" }}</span>
         <h3 class="offer__title">{{ solicitacao.titulo }}</h3>
         <p class="offer__desc">{{ solicitacao.descricao }}</p>

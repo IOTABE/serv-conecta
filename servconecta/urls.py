@@ -31,5 +31,7 @@ urlpatterns = [
     ),
     path("sair/", auth_views.LogoutView.as_view(next_page="home"), name="logout"),
     path("cadastro/", views.cadastro, name="cadastro"),
+    # API
+    path("api/subcategorias/", views.api_subcategorias, name="api_subcategorias"),
 ]
 

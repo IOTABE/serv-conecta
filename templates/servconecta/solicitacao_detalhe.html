@@ -93,7 +93,10 @@
             <div class="fact__icon"><span class="material-symbols-rounded">category</span></div>
             <div>
               <div class="fact__label">Categoria</div>
-              <div class="fact__value">{{ solicitacao.categoria }}</div>
+              <div class="fact__value">
+                {{ solicitacao.categoria.nome }}
+                {% if solicitacao.subcategoria %} › {{ solicitacao.subcategoria.nome }}{% endif %}
+              </div>
             </div>
           </div>
           {% endif %}

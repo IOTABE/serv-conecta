@@ -17,6 +17,27 @@
         <input type="search" name="q" value="{{ request.GET.q|default:'' }}"
                placeholder="Buscar solicitação (ex.: jardinagem, pintura...)" />
       </label>
+
+      <div class="field field--select">
+        <span class="material-symbols-rounded">category</span>
+        <select name="categoria" id="filter-categoria">
+          <option value="">Todas as Categorias</option>
+          {% for cat in categorias %}
+            <option value="{{ cat.id }}" {% if categoria_id == cat.id %}selected{% endif %}>{{ cat.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field field--select">
+        <span class="material-symbols-rounded">subheader</span>
+        <select name="subcategoria" id="filter-subcategoria" {% if not categoria_id %}disabled{% endif %}>
+          <option value="">Todas as Subcategorias</option>
+          {% for sub in subcategorias %}
+            <option value="{{ sub.id }}" {% if subcategoria_id == sub.id %}selected{% endif %}>{{ sub.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
       <label class="field field--sm">
         <span class="material-symbols-rounded">location_on</span>
         <input type="text" name="cidade" value="{{ request.GET.cidade|default:'' }}" placeholder="Cidade" />
@@ -42,6 +63,13 @@
       {% for solicitacao in solicitacoes %}
         <article class="offer request glass">
           <div class="offer__body">
+            {% if solicitacao.categoria %}
+              <div class="cat-badge">
+                <span class="material-symbols-rounded">label</span>
+                {{ solicitacao.categoria.nome }}
+                {% if solicitacao.subcategoria %} › {{ solicitacao.subcategoria.nome }}{% endif %}
+              </div>
+            {% endif %}
             <span class="badge badge--open">{{ solicitacao.get_status_display|default:"aberta" }}</span>
             <h3 class="offer__title">{{ solicitacao.titulo }}</h3>
             <p class="offer__desc">{{ solicitacao.descricao }}</p>
@@ -64,13 +92,13 @@
     {% if is_paginated %}
       <nav class="pagination" aria-label="Paginação">
         {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}" class="btn btn--outline">
+          <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if cidade %}&cidade={{ cidade }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}{% if subcategoria_id %}&subcategoria={{ subcategoria_id }}{% endif %}" class="btn btn--outline">
             <span class="material-symbols-rounded">chevron_left</span> Anterior
           </a>
         {% endif %}
         <span class="pagination__info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
         {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}" class="btn btn--outline">
+          <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if cidade %}&cidade={{ cidade }}{% endif %}{% if categoria_id %}&categoria={{ categoria_id }}{% endif %}{% if subcategoria_id %}&subcategoria={{ subcategoria_id }}{% endif %}" class="btn btn--outline">
             Próxima <span class="material-symbols-rounded">chevron_right</span>
           </a>
         {% endif %}
@@ -78,6 +106,40 @@
     {% endif %}
   </section>
 
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const catSelect = document.getElementById('filter-categoria');
+    const subSelect = document.getElementById('filter-subcategoria');
+    if (!catSelect || !subSelect) return;
+
+    catSelect.addEventListener('change', function() {
+      const catId = this.value;
+      if (!catId) {
+        subSelect.innerHTML = '<option value="">Todas as Subcategorias</option>';
+        subSelect.disabled = true;
+        return;
+      }
+      subSelect.disabled = true;
+      subSelect.innerHTML = '<option value="">Carregando...</option>';
+
+      fetch(`/api/subcategorias/?categoria_id=${catId}`)
+        .then(res => res.json())
+        .then(data => {
+          subSelect.innerHTML = '<option value="">Todas as Subcategorias</option>';
+          data.forEach(sub => {
+            const opt = document.createElement('option');
+            opt.value = sub.id;
+            opt.textContent = sub.nome;
+            subSelect.appendChild(opt);
+          });
+          subSelect.disabled = false;
+        })
+        .catch(() => {
+          subSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+        });
+    });
+  });
+</script>
 {% endblock %}
 
 {% block extra_head %}
@@ -86,12 +148,17 @@
     display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px;
   }
   .field {
-    display: flex; align-items: center; gap: 8px; flex: 1; min-width: 180px;
+    display: flex; align-items: center; gap: 8px; flex: 1; min-width: 160px;
     padding: 0 14px; border-radius: 999px;
     background: rgba(255,255,255,.9);
     box-shadow: var(--e1);
   }
-  .field--sm { flex: 0 1 220px; }
+  .field--sm { flex: 0 1 180px; }
+  .field--select select {
+    flex: 1; border: 0; outline: 0; background: transparent;
+    font-family: inherit; font-size: .88rem; color: var(--ink);
+    padding: 11px 0; cursor: pointer;
+  }
   .field .material-symbols-rounded { color: var(--ink-faint); font-size: 20px; }
   .field input {
     flex: 1; border: 0; outline: 0; background: transparent;
@@ -99,6 +166,14 @@
     padding: 11px 0;
   }
   .field input::placeholder { color: var(--ink-faint); }
+
+  .cat-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.76rem; font-weight: 600;
+    color: var(--md-primary); background: rgba(25, 118, 210, 0.08);
+    padding: 4px 10px; border-radius: 999px; margin-bottom: 8px;
+  }
+  .cat-badge .material-symbols-rounded { font-size: 14px; }
 
   .pagination {
     display: flex; align-items: center; justify-content: center;

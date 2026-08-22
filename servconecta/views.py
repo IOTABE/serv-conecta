@@ -9,16 +9,27 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from .forms import CadastroForm, OfertaForm, PropostaForm, SolicitacaoForm
-from .models import MensagemChat, Oferta, Proposta, Solicitacao
+from .models import Categoria, Subcategoria, MensagemChat, Oferta, Proposta, Solicitacao
 
 User = get_user_model()
+
+
+def api_subcategorias(request):
+    """Retorna a lista de subcategorias de uma categoria em formato JSON."""
+    categoria_id = request.GET.get("categoria_id")
+    if not categoria_id:
+        return JsonResponse([], safe=False)
+
+    subcategorias = Subcategoria.objects.filter(categoria_id=categoria_id).values("id", "nome", "slug")
+    return JsonResponse(list(subcategorias), safe=False)
 
 
 def home(request):
     """Página inicial: hero, destaques e itens recentes."""
     context = {
-        "ofertas": Oferta.objects.select_related("prestador")[:4],
-        "solicitacoes": Solicitacao.objects.select_related("cliente")[:4],
+        "ofertas": Oferta.objects.select_related("prestador", "categoria", "subcategoria")[:4],
+        "solicitacoes": Solicitacao.objects.select_related("cliente", "categoria", "subcategoria")[:4],
+        "categorias": Categoria.objects.prefetch_related("subcategorias")[:6],
     }
     return render(request, "servconecta/home.html", context)
 
@@ -32,16 +43,29 @@ def _paginar(request, queryset, por_pagina=9):
 
 
 def ofertas(request):
-    """Listagem de ofertas com busca por texto e filtro por cidade."""
-    qs = Oferta.objects.select_related("prestador").all()
+    """Listagem de ofertas com busca por texto, cidade, categoria e subcategoria."""
+    qs = Oferta.objects.select_related("prestador", "categoria", "subcategoria").all()
 
     q = request.GET.get("q", "").strip()
     cidade = request.GET.get("cidade", "").strip()
+    categoria_id = request.GET.get("categoria", "").strip()
+    subcategoria_id = request.GET.get("subcategoria", "").strip()
 
     if q:
         qs = qs.filter(Q(titulo__icontains=q) | Q(descricao__icontains=q))
     if cidade:
         qs = qs.filter(cidade__icontains=cidade)
+    if categoria_id:
+        qs = qs.filter(categoria_id=categoria_id)
+    if subcategoria_id:
+        qs = qs.filter(subcategoria_id=subcategoria_id)
+
+    categorias = Categoria.objects.all()
+    subcategorias = (
+        Subcategoria.objects.filter(categoria_id=categoria_id)
+        if categoria_id.isdigit()
+        else Subcategoria.objects.none()
+    )
 
     page_obj = _paginar(request, qs)
     context = {
@@ -51,21 +75,38 @@ def ofertas(request):
         "total": qs.count(),
         "q": q,
         "cidade": cidade,
+        "categoria_id": int(categoria_id) if categoria_id.isdigit() else "",
+        "subcategoria_id": int(subcategoria_id) if subcategoria_id.isdigit() else "",
+        "categorias": categorias,
+        "subcategorias": subcategorias,
     }
     return render(request, "servconecta/ofertas.html", context)
 
 
 def solicitacoes(request):
-    """Listagem de solicitações com busca por texto e filtro por cidade."""
-    qs = Solicitacao.objects.select_related("cliente").all()
+    """Listagem de solicitações com busca por texto, cidade, categoria e subcategoria."""
+    qs = Solicitacao.objects.select_related("cliente", "categoria", "subcategoria").all()
 
     q = request.GET.get("q", "").strip()
     cidade = request.GET.get("cidade", "").strip()
+    categoria_id = request.GET.get("categoria", "").strip()
+    subcategoria_id = request.GET.get("subcategoria", "").strip()
 
     if q:
         qs = qs.filter(Q(titulo__icontains=q) | Q(descricao__icontains=q))
     if cidade:
         qs = qs.filter(cidade__icontains=cidade)
+    if categoria_id:
+        qs = qs.filter(categoria_id=categoria_id)
+    if subcategoria_id:
+        qs = qs.filter(subcategoria_id=subcategoria_id)
+
+    categorias = Categoria.objects.all()
+    subcategorias = (
+        Subcategoria.objects.filter(categoria_id=categoria_id)
+        if categoria_id.isdigit()
+        else Subcategoria.objects.none()
+    )
 
     page_obj = _paginar(request, qs)
     context = {
@@ -75,18 +116,24 @@ def solicitacoes(request):
         "total": qs.count(),
         "q": q,
         "cidade": cidade,
+        "categoria_id": int(categoria_id) if categoria_id.isdigit() else "",
+        "subcategoria_id": int(subcategoria_id) if subcategoria_id.isdigit() else "",
+        "categorias": categorias,
+        "subcategorias": subcategorias,
     }
     return render(request, "servconecta/solicitacoes.html", context)
 
 
 def oferta_detalhe(request, pk):
-    oferta = get_object_or_404(Oferta.objects.select_related("prestador"), pk=pk)
+    oferta = get_object_or_404(
+        Oferta.objects.select_related("prestador", "categoria", "subcategoria"), pk=pk
+    )
     return render(request, "servconecta/oferta_detalhe.html", {"oferta": oferta})
 
 
 def solicitacao_detalhe(request, pk):
     solicitacao = get_object_or_404(
-        Solicitacao.objects.select_related("cliente"), pk=pk
+        Solicitacao.objects.select_related("cliente", "categoria", "subcategoria"), pk=pk
     )
     proposta_do_usuario = None
     propostas = None
@@ -180,7 +227,7 @@ def proposta_criar(request, pk):
 @login_required
 def contratar_oferta(request, pk):
     """Cliente contrata uma oferta criando uma solicitação vinculada."""
-    oferta = get_object_or_404(Oferta.objects.select_related("prestador"), pk=pk)
+    oferta = get_object_or_404(Oferta.objects.select_related("prestador", "categoria", "subcategoria"), pk=pk)
 
     if request.user == oferta.prestador:
         messages.error(request, "Você não pode contratar sua própria oferta.")
@@ -208,6 +255,7 @@ def contratar_oferta(request, pk):
             "orcamento": oferta.preco,
             "cidade": oferta.cidade,
             "categoria": oferta.categoria,
+            "subcategoria": oferta.subcategoria,
         })
 
     return render(request, "servconecta/contratar_form.html", {
@@ -225,7 +273,7 @@ def chat_oferta(request, pk):
     """
     from django.utils import timezone
 
-    oferta = get_object_or_404(Oferta.objects.select_related("prestador", "categoria"), pk=pk)
+    oferta = get_object_or_404(Oferta.objects.select_related("prestador", "categoria", "subcategoria"), pk=pk)
 
     if request.user == oferta.prestador:
         messages.info(request, "Esta é a sua oferta.")
@@ -242,6 +290,7 @@ def chat_oferta(request, pk):
         solicitacao_existente = Solicitacao.objects.create(
             cliente=request.user,
             categoria=oferta.categoria,
+            subcategoria=oferta.subcategoria,
             titulo=f"Conversa sobre: {oferta.titulo}",
             descricao=oferta.descricao,
             orcamento=oferta.preco,

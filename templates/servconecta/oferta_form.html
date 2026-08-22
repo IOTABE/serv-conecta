@@ -123,10 +123,16 @@
           {{ form.categoria.errors }}
         </div>
         <div class="field">
-          <label for="{{ form.cidade.id_for_label }}">Cidade</label>
-          {{ form.cidade }}
-          {{ form.cidade.errors }}
+          <label for="{{ form.subcategoria.id_for_label }}">Subcategoria</label>
+          {{ form.subcategoria }}
+          {{ form.subcategoria.errors }}
         </div>
+      </div>
+
+      <div class="field">
+        <label for="{{ form.cidade.id_for_label }}">Cidade</label>
+        {{ form.cidade }}
+        {{ form.cidade.errors }}
       </div>
 
       <div class="field">
@@ -167,4 +173,53 @@
     </div>
   </form>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const categoriaSelect = document.getElementById('{{ form.categoria.id_for_label }}');
+    const subcategoriaSelect = document.getElementById('{{ form.subcategoria.id_for_label }}');
+    if (!categoriaSelect || !subcategoriaSelect) return;
+
+    function carregarSubcategorias(categoriaId, subcategoriaSelecionada = null) {
+      if (!categoriaId) {
+        subcategoriaSelect.innerHTML = '<option value="">Selecione uma categoria primeiro</option>';
+        subcategoriaSelect.disabled = true;
+        return;
+      }
+      subcategoriaSelect.disabled = true;
+      subcategoriaSelect.innerHTML = '<option value="">Carregando...</option>';
+
+      fetch(`/api/subcategorias/?categoria_id=${categoriaId}`)
+        .then(response => response.json())
+        .then(data => {
+          subcategoriaSelect.innerHTML = '<option value="">Selecione uma subcategoria (opcional)</option>';
+          data.forEach(sub => {
+            const option = document.createElement('option');
+            option.value = sub.id;
+            option.textContent = sub.nome;
+            if (subcategoriaSelecionada && String(sub.id) === String(subcategoriaSelecionada)) {
+              option.selected = true;
+            }
+            subcategoriaSelect.appendChild(option);
+          });
+          subcategoriaSelect.disabled = false;
+        })
+        .catch(() => {
+          subcategoriaSelect.innerHTML = '<option value="">Erro ao carregar subcategorias</option>';
+        });
+    }
+
+    const valorInicialSub = subcategoriaSelect.value;
+    if (categoriaSelect.value) {
+      carregarSubcategorias(categoriaSelect.value, valorInicialSub);
+    } else {
+      subcategoriaSelect.innerHTML = '<option value="">Selecione uma categoria primeiro</option>';
+      subcategoriaSelect.disabled = true;
+    }
+
+    categoriaSelect.addEventListener('change', function() {
+      carregarSubcategorias(this.value);
+    });
+  });
+</script>
 {% endblock %}

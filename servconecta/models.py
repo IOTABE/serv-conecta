@@ -16,6 +16,25 @@ class Categoria(models.Model):
         return self.nome
 
 
+class Subcategoria(models.Model):
+    categoria = models.ForeignKey(
+        Categoria,
+        on_delete=models.CASCADE,
+        related_name="subcategorias",
+    )
+    nome = models.CharField(max_length=80)
+    slug = models.SlugField(max_length=90)
+
+    class Meta:
+        verbose_name = "Subcategoria"
+        verbose_name_plural = "Subcategorias"
+        ordering = ["categoria__nome", "nome"]
+        unique_together = ("categoria", "slug")
+
+    def __str__(self):
+        return f"{self.categoria.nome} › {self.nome}"
+
+
 class Oferta(models.Model):
     """Serviço oferecido por um profissional."""
 
@@ -26,6 +45,13 @@ class Oferta(models.Model):
     )
     categoria = models.ForeignKey(
         Categoria,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ofertas",
+    )
+    subcategoria = models.ForeignKey(
+        Subcategoria,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -68,6 +94,13 @@ class Solicitacao(models.Model):
     )
     categoria = models.ForeignKey(
         Categoria,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="solicitacoes",
+    )
+    subcategoria = models.ForeignKey(
+        Subcategoria,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
