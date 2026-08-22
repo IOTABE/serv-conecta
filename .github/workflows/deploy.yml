@@ -19,27 +19,30 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
+            # Garantir que o binário do uv seja encontrado no PATH da sessão SSH
+            export PATH="$HOME/.local/bin:$HOME/.cargo/bin:/root/.local/bin:/usr/local/bin:$PATH"
+
             cd /www/wwwroot/serv-conecta
             echo ">>> Atualizando repositório Git..."
             git pull origin master
 
-            echo ">>> Instalando/Atualizando dependências..."
+            echo ">>> Atualizando ambiente virtual e dependências com uv..."
             if command -v uv &> /dev/null; then
+                echo "Executando 'uv sync'..."
                 uv sync
-                echo ">>> Executando migrações..."
+                echo ">>> Executando migrações do Django..."
                 uv run manage.py migrate --noinput
                 echo ">>> Coletando arquivos estáticos..."
                 uv run manage.py collectstatic --noinput
             else
-                if [ -d "venv" ]; then
-                    source venv/bin/activate
-                elif [ -d ".venv" ]; then
+                echo "Aviso: 'uv' não encontrado no PATH. Tentando utilizar a venv local..."
+                if [ -d ".venv" ]; then
                     source .venv/bin/activate
+                elif [ -d "venv" ]; then
+                    source venv/bin/activate
                 fi
                 pip install -r requirements.txt
-                echo ">>> Executando migrações..."
                 python manage.py migrate --noinput
-                echo ">>> Coletando arquivos estáticos..."
                 python manage.py collectstatic --noinput
             fi
 
