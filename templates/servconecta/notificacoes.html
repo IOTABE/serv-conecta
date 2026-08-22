@@ -1,0 +1,78 @@
+{% extends "servconecta/base.html" %}
+
+{% block title %}Notificações &middot; ServConecta{% endblock %}
+
+{% block extra_head %}
+<style>
+  .lista-notificacoes { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+  .notificacao {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 18px 20px; border-radius: var(--radius);
+    text-decoration: none; transition: transform .15s ease, box-shadow .15s ease;
+  }
+  a.notificacao:hover { transform: translateY(-2px); box-shadow: var(--e3); }
+  .notificacao--nova { border-left: 4px solid var(--primary); }
+  .notificacao__icone {
+    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+    display: grid; place-items: center;
+    background: var(--primary-050); color: var(--primary);
+  }
+  .notificacao__titulo { font-weight: 700; font-size: .95rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .notificacao__texto { font-size: .88rem; color: var(--ink-soft); margin-top: 2px; }
+  .notificacao__quando { font-size: .75rem; color: var(--ink-faint); margin-top: 6px; }
+  .pill-nova {
+    font-size: .62rem; font-weight: 800; letter-spacing: .5px;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 999px;
+    background: var(--primary); color: #fff;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <h1>Notificações</h1>
+  <p>
+    {% if total_nao_lidas %}
+      Você tinha {{ total_nao_lidas }} notificaç{{ total_nao_lidas|pluralize:"ão,ões" }} não lida{{ total_nao_lidas|pluralize }} — marcada{{ total_nao_lidas|pluralize }} como lida.
+    {% else %}
+      Tudo em dia por aqui.
+    {% endif %}
+  </p>
+</section>
+
+<div class="lista-notificacoes">
+  {% for notif in notificacoes %}
+    {% if notif.url %}
+      <a class="notificacao glass {% if not notif.lida %}notificacao--nova{% endif %}" href="{{ notif.url }}">
+        <div class="notificacao__icone"><span class="material-symbols-rounded">notifications</span></div>
+        <div style="flex:1;">
+          <div class="notificacao__titulo">
+            {{ notif.titulo }}
+            {% if not notif.lida %}<span class="pill-nova">Nova</span>{% endif %}
+          </div>
+          <div class="notificacao__texto">{{ notif.texto }}</div>
+          <div class="notificacao__quando">{{ notif.criada_em|date:"d/m/Y H:i" }}</div>
+        </div>
+        <span class="material-symbols-rounded" style="color:var(--ink-faint)">chevron_right</span>
+      </a>
+    {% else %}
+      <div class="notificacao glass {% if not notif.lida %}notificacao--nova{% endif %}">
+        <div class="notificacao__icone"><span class="material-symbols-rounded">notifications</span></div>
+        <div style="flex:1;">
+          <div class="notificacao__titulo">
+            {{ notif.titulo }}
+            {% if not notif.lida %}<span class="pill-nova">Nova</span>{% endif %}
+          </div>
+          <div class="notificacao__texto">{{ notif.texto }}</div>
+          <div class="notificacao__quando">{{ notif.criada_em|date:"d/m/Y H:i" }}</div>
+        </div>
+      </div>
+    {% endif %}
+  {% empty %}
+    <div class="empty-state glass">
+      <span class="material-symbols-rounded">notifications_off</span>
+      Nenhuma notificação por aqui ainda.
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

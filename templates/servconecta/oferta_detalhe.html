@@ -1,4 +1,5 @@
 {% extends "servconecta/base.html" %}
+{% load avaliacoes_extras %}
 
 {% block title %}{{ oferta.titulo }} — ServConecta{% endblock %}
 {% block description %}{{ oferta.descricao|truncatechars:150 }}{% endblock %}
@@ -92,7 +93,11 @@
             </span>
           {% endif %}
           <span class="chip"><span class="material-symbols-rounded">location_on</span>{{ oferta.cidade|default:"A combinar" }}</span>
-          <span class="chip"><span class="material-symbols-rounded">verified</span>Profissional verificado</span>
+          {% if selo_prestador %}
+            <span class="chip" style="background:rgba(5,150,105,.1);color:var(--accent);">
+              <span class="material-symbols-rounded">verified</span> Prestador Destaque
+            </span>
+          {% endif %}
         </div>
 
         <h1>{{ oferta.titulo }}</h1>
@@ -114,7 +119,21 @@
         <div class="provider__avatar">{{ oferta.prestador.get_short_name|default:oferta.prestador.username|default:"P"|slice:":1"|upper }}</div>
         <div>
           <div class="provider__name">{{ oferta.prestador.get_full_name|default:oferta.prestador.username|default:"Profissional" }}</div>
-          <div class="provider__role">Prestador de serviço</div>
+          <div class="provider__role">
+            {% if selo_prestador %}
+              <span style="display:inline-flex;align-items:center;gap:4px;color:var(--accent);font-weight:700;">
+                <span class="material-symbols-rounded" style="font-size:15px;">verified</span> Prestador Verificado / Destaque
+              </span>
+            {% else %}
+              Prestador de serviço
+            {% endif %}
+            {% if servicos_finalizados %}
+              <span style="margin-left:6px;">· {{ servicos_finalizados }} serviço{{ servicos_finalizados|pluralize }} finalizado{{ servicos_finalizados|pluralize }}</span>
+            {% endif %}
+          </div>
+          <div style="margin-top:4px;">
+            {% include "servconecta/_nota.html" with nota=nota_prestador %}
+          </div>
         </div>
       </div>
 

@@ -1,0 +1,76 @@
+{% extends "servconecta/base.html" %}
+
+{% block title %}Abrir disputa &middot; ServConecta{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-shell { max-width: 640px; margin: 32px auto; padding-bottom: 32px; }
+  .form-card { padding: 32px; border-radius: 20px; }
+  .form-head h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 4px; }
+  .form-head p { color: var(--md-on-surface-variant); margin: 0; }
+  .resumo {
+    margin-top: 16px; padding: 14px 16px; border-radius: var(--radius-sm);
+    background: rgba(15,23,42,.04); border: 1px solid var(--line);
+    font-size: .9rem; display: grid; gap: 6px;
+  }
+  .resumo strong { color: var(--ink); }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+  .field label { font-size: .85rem; font-weight: 600; color: var(--md-on-surface-variant); }
+  .field textarea {
+    width: 100%; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid var(--glass-border); background: var(--glass-input-bg);
+    color: var(--md-on-surface); font-family: inherit; font-size: .95rem; resize: vertical;
+  }
+  .field textarea:focus { outline: none; border-color: var(--md-primary); box-shadow: 0 0 0 3px rgba(25,118,210,.18); }
+  .errorlist { list-style: none; padding: 0; margin: 0; color: var(--md-error); font-size: .8rem; }
+  .aviso-disputa {
+    margin-top: 20px; padding: 14px 16px; border-radius: var(--radius-sm);
+    background: rgba(220,38,38,.07); border: 1px solid rgba(220,38,38,.25);
+    display: flex; gap: 10px; align-items: flex-start; font-size: .88rem; color: var(--ink-soft);
+  }
+  .aviso-disputa .material-symbols-rounded { color: var(--md-error); flex-shrink: 0; }
+  .form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+  @media (max-width: 520px) { .form-actions { flex-direction: column-reverse; } .form-actions .btn { width: 100%; justify-content: center; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-shell">
+  <form class="glass form-card" method="post" novalidate>
+    {% csrf_token %}
+    <div class="form-head">
+      <h1>Abrir disputa / Suporte</h1>
+      <p>Você não confirmou o término da ordem abaixo.</p>
+    </div>
+
+    <div class="resumo">
+      <div><strong>Ordem:</strong> {{ solicitacao.titulo }}</div>
+      <div><strong>Solicitado por:</strong> {{ encerramento.solicitado_por.get_short_name|default:encerramento.solicitado_por.username }}</div>
+      {% if encerramento.valor_final %}
+        <div><strong>Valor final informado:</strong> R$ {{ encerramento.valor_final }}</div>
+      {% endif %}
+      {% if encerramento.observacoes %}
+        <div><strong>Observações:</strong> {{ encerramento.observacoes|truncatechars:200 }}</div>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <label for="{{ form.motivo.id_for_label }}">{{ form.motivo.label }}</label>
+      {{ form.motivo }}
+      {{ form.motivo.errors }}
+    </div>
+
+    <div class="aviso-disputa">
+      <span class="material-symbols-rounded">gavel</span>
+      <span>A ordem ficará pausada em <strong>disputa</strong> e o suporte do ServConecta vai mediar. As avaliações permanecem bloqueadas até a resolução.</span>
+    </div>
+
+    <div class="form-actions">
+      <a class="btn btn--outline" href="{% url 'solicitacao_detalhe' solicitacao.pk %}">Voltar</a>
+      <button class="btn btn--filled" type="submit" style="background:var(--md-error)">
+        <span class="material-symbols-rounded">gavel</span> Abrir disputa
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

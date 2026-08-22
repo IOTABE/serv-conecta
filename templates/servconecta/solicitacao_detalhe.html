@@ -1,4 +1,5 @@
 {% extends "servconecta/base.html" %}
+{% load avaliacoes_extras %}
 
 {% block title %}{{ solicitacao.titulo }} — ServConecta{% endblock %}
 {% block description %}{{ solicitacao.descricao|truncatechars:150 }}{% endblock %}
@@ -56,6 +57,61 @@
     .detail-aside { position: static; }
     .facts { grid-template-columns: 1fr; }
   }
+
+  /* ===== Fluxo de encerramento e avaliações ===== */
+  .ordem-fluxo { margin-top: 24px; padding: 24px 28px; }
+  .ordem-fluxo h2 { margin: 0 0 14px; font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .fluxo-passos { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .passo {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .78rem; font-weight: 600; color: var(--ink-faint);
+    padding: 5px 12px; border-radius: 999px;
+    background: rgba(15,23,42,.04);
+  }
+  .passo--ativo { color: var(--primary); background: var(--primary-050); box-shadow: inset 0 0 0 1.5px var(--primary-100); }
+  .passo--feito { color: var(--accent); background: rgba(5,150,105,.08); }
+  .fluxo-passos .material-symbols-rounded { font-size: 18px; color: var(--ink-faint); }
+
+  .painel-confirmacao {
+    padding: 18px 20px; border-radius: var(--radius-sm);
+    background: rgba(255,255,255,.6); border: 1px solid var(--glass-border);
+    display: grid; gap: 12px;
+  }
+  .painel-confirmacao__titulo { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .painel-acoes { display: flex; gap: 10px; flex-wrap: wrap; }
+  .aviso-caixa {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 14px 16px; border-radius: var(--radius-sm); font-size: .9rem;
+  }
+  .aviso-caixa--ok { background: rgba(5,150,105,.08); border: 1px solid rgba(5,150,105,.25); color: var(--ink-soft); }
+  .aviso-caixa--alerta { background: rgba(220,38,38,.07); border: 1px solid rgba(220,38,38,.25); color: var(--ink-soft); }
+  .aviso-caixa--info { background: rgba(26,86,219,.06); border: 1px solid var(--primary-100); color: var(--ink-soft); }
+  .aviso-caixa--neutro { background: rgba(15,23,42,.04); border: 1px solid var(--line); color: var(--ink-soft); }
+  .aviso-caixa .material-symbols-rounded { flex-shrink: 0; font-size: 22px; }
+  .aviso-caixa--ok .material-symbols-rounded { color: var(--accent); }
+  .aviso-caixa--alerta .material-symbols-rounded { color: var(--md-error); }
+  .aviso-caixa--info .material-symbols-rounded { color: var(--primary); }
+
+  .avaliacao-box {
+    padding: 16px 18px; border-radius: var(--radius-sm);
+    background: rgba(255,255,255,.6); border: 1px solid var(--glass-border);
+    display: grid; gap: 10px;
+  }
+  .avaliacao-box__cabecalho { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .nota-exibida { display: inline-flex; align-items: center; gap: 4px; }
+  .nota-exibida__estrelas { display: inline-flex; }
+  .nota-exibida .material-symbols-rounded { font-size: 20px; }
+  .nota-cheia { color: #f59e0b; font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  .nota-vazia { color: #cbd5e1; }
+  .criterios-nota { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 18px; }
+  .criterio-linha { display: flex; justify-content: space-between; gap: 10px; font-size: .84rem; color: var(--ink-soft); }
+  .tag-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: .74rem; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+    background: rgba(5,150,105,.08); color: var(--accent);
+  }
+  .tag-chip--ruim { background: rgba(220,38,38,.07); color: var(--md-error); }
+  .tags-lista { display: flex; flex-wrap: wrap; gap: 6px; }
 </style>
 {% endblock %}
 
@@ -108,6 +164,142 @@
             </div>
           </div>
         </div>
+
+        {# ================= FLUXO DE ENCERRAMENTO (3 ETAPAS) ================= #}
+        {% if participante %}
+        <section class="ordem-fluxo glass" style="background:rgba(255,255,255,.35);">
+          <h2><span class="material-symbols-rounded" style="color:var(--primary)">flag_circle</span> Ordem de serviço</h2>
+
+          <div class="fluxo-passos">
+            <span class="passo {% if solicitacao.status != 'concluida' %}passo--ativo{% else %}passo--feito{% endif %}">
+              <span class="material-symbols-rounded">{% if solicitacao.status != 'concluida' %}schedule{% else %}check{% endif %}</span>
+              1. Execução
+            </span>
+            <span class="material-symbols-rounded">chevron_right</span>
+            <span class="passo {% if encerramento and encerramento.status == 'pendente' %}passo--ativo{% elif solicitacao.status == 'concluida' %}passo--feito{% endif %}">
+              <span class="material-symbols-rounded">{% if solicitacao.status == 'concluida' %}check{% else %}handshake{% endif %}</span>
+              2. Dupla confirmação
+            </span>
+            <span class="material-symbols-rounded">chevron_right</span>
+            <span class="passo {% if solicitacao.status == 'concluida' and ja_avaliou %}passo--ativo{% endif %}">
+              <span class="material-symbols-rounded">reviews</span>
+              3. Avaliações
+            </span>
+          </div>
+
+          {% if solicitacao.status == 'concluida' %}
+            <div class="aviso-caixa aviso-caixa--ok">
+              <span class="material-symbols-rounded">task_alt</span>
+              <span><strong>Serviço concluído!</strong> A avaliação às cegas está liberada para as duas partes.</span>
+            </div>
+
+            {% if not ja_avaliou %}
+              <a href="{% url 'solicitacao_avaliar' solicitacao.pk %}" class="btn btn--filled btn--block" style="margin-top:14px;">
+                <span class="material-symbols-rounded">reviews</span> Avaliar experiência
+              </a>
+            {% elif outra_avaliacao_pendente %}
+              <div class="aviso-caixa aviso-caixa--info" style="margin-top:14px;">
+                <span class="material-symbols-rounded">visibility_off</span>
+                <span>Sua avaliação foi registrada. Ela será revelada quando a outra parte também avaliar (avaliação cega).</span>
+              </div>
+            {% endif %}
+
+            {% for av in avaliacoes_reveladas %}
+              <div class="avaliacao-box" style="margin-top:14px;">
+                <div class="avaliacao-box__cabecalho">
+                  <strong style="font-size:.9rem;">{{ av.titulo }}</strong>
+                  <span style="font-size:.75rem;color:var(--ink-faint);">{{ av.data|date:"d/m/Y" }}</span>
+                  {% include "servconecta/_nota.html" with nota=av.media %}
+                </div>
+                <div class="criterios-nota">
+                  {% for nome_criterio, nota in av.notas %}
+                    <div class="criterio-linha">
+                      <span>{{ nome_criterio }}</span>
+                      <span>{% include "servconecta/_nota.html" with nota=nota %}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+                {% if av.tags %}
+                  <div class="tags-lista">
+                    {% for tag in av.tags %}
+                      <span class="tag-chip {% if tag == 'Não Cumpriu Horário' or tag == 'Comunicação Difícil' %}tag-chip--ruim{% endif %}">{{ tag }}</span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+                {% if av.comentario %}<p style="margin:0;font-size:.88rem;color:var(--ink-soft);">{{ av.comentario }}</p>{% endif %}
+              </div>
+            {% endfor %}
+
+          {% elif encerramento and encerramento.status == 'disputado' %}
+            <div class="aviso-caixa aviso-caixa--alerta">
+              <span class="material-symbols-rounded">gavel</span>
+              <span>
+                <strong>Ordem em disputa.</strong> O suporte do ServConecta vai mediar.
+                {% if encerramento.resposta_observacoes %}Motivo registrado: “{{ encerramento.resposta_observacoes }}”.{% endif %}
+                As avaliações permanecem bloqueadas até a resolução.
+              </span>
+            </div>
+
+          {% elif encerramento and encerramento.status == 'pendente' %}
+            {% if encerramento.solicitado_por == user %}
+              <div class="painel-confirmacao">
+                <div class="aviso-caixa aviso-caixa--info" style="padding:0;border:0;background:none;">
+                  <span class="material-symbols-rounded">hourglass_top</span>
+                  <span>
+                    Você marcou esta ordem como concluída. Aguardando
+                    <strong>{{ encerramento.outra_parte.get_short_name|default:encerramento.outra_parte.username }}</strong>
+                    aprovar o término ou abrir disputa.
+                  </span>
+                </div>
+                {% if encerramento.valor_final %}<div style="font-size:.9rem;">Valor final informado: <strong>R$ {{ encerramento.valor_final }}</strong></div>{% endif %}
+                {% if encerramento.observacoes %}<div style="font-size:.9rem;color:var(--ink-soft);">{{ encerramento.observacoes }}</div>{% endif %}
+                <form method="post" action="{% url 'encerramento_cancelar' encerramento.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn--outline" style="align-self:start;">
+                    <span class="material-symbols-rounded">undo</span> Cancelar meu pedido
+                  </button>
+                </form>
+              </div>
+            {% else %}
+              <div class="painel-confirmacao">
+                <div class="painel-confirmacao__titulo">
+                  <span class="material-symbols-rounded" style="color:var(--primary)">verified_user</span>
+                  {{ encerramento.solicitado_por.get_short_name|default:encerramento.solicitado_por.username }} marcou o serviço como concluído. Confirma o término?
+                </div>
+                {% if encerramento.valor_final %}
+                  <div style="font-size:.95rem;">Valor final ajustado: <strong>R$ {{ encerramento.valor_final }}</strong></div>
+                {% endif %}
+                {% if encerramento.observacoes %}
+                  <div style="font-size:.92rem;color:var(--ink-soft);white-space:pre-line;">{{ encerramento.observacoes }}</div>
+                {% endif %}
+                <div class="painel-acoes">
+                  <form method="post" action="{% url 'encerramento_aprovar' encerramento.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn--filled">
+                      <span class="material-symbols-rounded">task_alt</span> Aprovar conclusão
+                    </button>
+                  </form>
+                  <a href="{% url 'encerramento_disputar' encerramento.pk %}" class="btn btn--outline" style="color:var(--md-error);">
+                    <span class="material-symbols-rounded">gavel</span> Abrir disputa / Suporte
+                  </a>
+                </div>
+              </div>
+            {% endif %}
+
+          {% else %}
+            <div class="aviso-caixa aviso-caixa--neutro">
+              <span class="material-symbols-rounded">info</span>
+              <span>
+                Quando o serviço terminar, qualquer parte pode marcá-lo como concluído.
+                O fechamento só acontece com a <strong>confirmação das duas partes</strong>.
+              </span>
+            </div>
+            <a href="{% url 'solicitacao_concluir' solicitacao.pk %}" class="btn btn--filled btn--block" style="margin-top:14px;">
+              <span class="material-symbols-rounded">task_alt</span> Marcar como Concluído
+            </a>
+          {% endif %}
+        </section>
+        {% endif %}
       </div>
     </article>
 
@@ -118,6 +310,29 @@
       </div>
 
       <hr class="aside-divider" />
+
+      {% if profissional_ativo %}
+      <div class="provider">
+        <div class="provider__avatar">{{ profissional_ativo.get_short_name|default:profissional_ativo.username|default:"P"|slice:":1"|upper }}</div>
+        <div>
+          <div class="provider__name">{{ profissional_ativo.get_full_name|default:profissional_ativo.username }}</div>
+          <div class="provider__role">
+            {% if selo_profissional %}
+              <span style="display:inline-flex;align-items:center;gap:4px;color:var(--accent);font-weight:700;">
+                <span class="material-symbols-rounded" style="font-size:15px;">verified</span> Prestador Destaque
+              </span>
+            {% else %}
+              Profissional da ordem
+            {% endif %}
+          </div>
+          <div style="margin-top:4px;">
+            {% include "servconecta/_nota.html" with nota=nota_profissional %}
+          </div>
+        </div>
+      </div>
+
+      <hr class="aside-divider" />
+      {% endif %}
 
       <div class="aside-actions">
         {% if user.is_authenticated %}

@@ -3,7 +3,14 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
 
-from .models import Oferta, Solicitacao, Proposta, Subcategoria
+from .models import (
+    Avaliacao,
+    Encerramento,
+    Oferta,
+    Solicitacao,
+    Proposta,
+    Subcategoria,
+)
 
 User = get_user_model()
 
@@ -17,6 +24,88 @@ def validar_tamanho_imagem(imagem):
         raise ValidationError(
             f"A imagem deve ter no máximo {TAMANHO_MAXIMO_IMAGEM_MB} MB."
         )
+
+
+class EncerramentoForm(forms.ModelForm):
+    """Etapa 1 do fechamento: pedido de conclusão com dupla confirmação."""
+
+    class Meta:
+        model = Encerramento
+        fields = ["valor_final", "observacoes"]
+        labels = {
+            "valor_final": "Valor final ajustado (R$)",
+            "observacoes": "Observações do serviço",
+        }
+        widgets = {
+            "observacoes": forms.Textarea(attrs={
+                "rows": 4,
+                "placeholder": "Relate como o serviço foi executado, combinações finais, etc.",
+            }),
+        }
+        help_texts = {
+            "valor_final": "Deixe em branco se o valor acordado não mudou.",
+        }
+
+
+class DisputaForm(forms.Form):
+    """Etapa 2 alternativa: abrir disputa / suporte."""
+
+    motivo = forms.CharField(
+        label="Motivo da disputa",
+        widget=forms.Textarea(attrs={
+            "rows": 4,
+            "placeholder": "Explique o problema com o serviço para a nossa equipe analisar.",
+        }),
+    )
+
+
+class AvaliacaoForm(forms.Form):
+    """
+    Etapa 3: avaliação às cegas.
+
+    Os critérios (4 notas de 1 a 5) e as tags rápidas dependem do papel:
+    cliente avalia prestador ("CP") ou prestador avalia cliente ("PC").
+    """
+
+    def __init__(self, papel, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.papel = papel
+
+        for campo in Avaliacao.CRITERIOS[papel]:
+            self.fields[campo] = forms.TypedChoiceField(
+                label=Avaliacao.LABELS[campo],
+                choices=[(i, str(i)) for i in range(1, 6)],
+                coerce=int,
+                widget=forms.RadioSelect,
+            )
+
+        self.fields["tags"] = forms.MultipleChoiceField(
+            label="Feedback rápido",
+            required=False,
+            choices=[(tag, tag) for tag in Avaliacao.TAGS_POR_PAPEL[papel]],
+            widget=forms.CheckboxSelectMultiple,
+        )
+        self.fields["comentario"] = forms.CharField(
+            label="Comentário (opcional)",
+            required=False,
+            max_length=500,
+            widget=forms.Textarea(attrs={
+                "rows": 3,
+                "placeholder": "Escreva uma experiência para ajudar a comunidade...",
+            }),
+        )
+
+    def clean_tags(self):
+        return ", ".join(sorted(self.cleaned_data.get("tags", [])))
+
+    def aplicar_em(self, avaliacao):
+        """Preenche a instância de Avaliacao com os critérios do papel."""
+        avaliacao.papel = self.papel
+        for campo in Avaliacao.CRITERIOS[self.papel]:
+            setattr(avaliacao, f"nota_{campo}", self.cleaned_data[campo])
+        avaliacao.tags = self.cleaned_data["tags"]
+        avaliacao.comentario = self.cleaned_data["comentario"]
+        return avaliacao
 
 
 class CadastroForm(UserCreationForm):

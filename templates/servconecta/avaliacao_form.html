@@ -1,0 +1,133 @@
+{% extends "servconecta/base.html" %}
+
+{% block title %}Avaliar experiência &middot; ServConecta{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-shell { max-width: 640px; margin: 32px auto; padding-bottom: 32px; }
+  .form-card { padding: 32px; border-radius: 20px; }
+  .avaliado-card {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 16px; padding: 14px 16px; border-radius: var(--radius-sm);
+    background: rgba(255,255,255,.5); border: 1px solid var(--glass-border);
+  }
+  .avaliado-card__avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--primary); color: #fff; font-weight: 700;
+    box-shadow: var(--e1); flex-shrink: 0;
+  }
+  .criterio {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-top: 18px; padding: 12px 16px;
+    background: rgba(255,255,255,.5); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm); flex-wrap: wrap;
+  }
+  .criterio__nome { font-weight: 600; font-size: .95rem; }
+  .estrelas { display: inline-flex; }
+  .estrelas input { display: none; }
+  .estrelas label { cursor: pointer; display: grid; place-items: center; padding: 0 1px; }
+  .estrelas .material-symbols-rounded {
+    font-size: 30px; color: #cbd5e1;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    transition: color .15s ease, transform .15s ease;
+  }
+  /* DOM em ordem 5→1 com row-reverse: preenche as estrelas à esquerda */
+  .estrelas { flex-direction: row-reverse; justify-content: flex-end; }
+  .estrelas input:checked ~ label .material-symbols-rounded,
+  .estrelas label:hover .material-symbols-rounded,
+  .estrelas label:hover ~ label .material-symbols-rounded {
+    color: #f59e0b;
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .tags-bloco { margin-top: 20px; }
+  .tags-bloco > label { font-size: .85rem; font-weight: 600; color: var(--md-on-surface-variant); }
+  .tags-bloco ul { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 10px 0 0; }
+  .tags-bloco li { position: relative; }
+  .tags-bloco input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+  .tags-bloco label {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 14px; border-radius: 999px; cursor: pointer;
+    font-size: .84rem; font-weight: 600;
+    background: rgba(26,86,219,.06); color: var(--ink-soft);
+    border: 1.5px solid transparent; transition: all .15s ease;
+  }
+  .tags-bloco input:checked + label {
+    background: rgba(26,86,219,.12); color: var(--primary);
+    border-color: var(--primary);
+  }
+  .field-comentario { display: flex; flex-direction: column; gap: 6px; margin-top: 20px; }
+  .field-comentario label { font-size: .85rem; font-weight: 600; color: var(--md-on-surface-variant); }
+  .field-comentario textarea {
+    width: 100%; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid var(--glass-border); background: var(--glass-input-bg);
+    color: var(--md-on-surface); font-family: inherit; font-size: .95rem; resize: vertical;
+  }
+  .errorlist { list-style: none; padding: 0; margin: 6px 0 0; color: var(--md-error); font-size: .8rem; }
+  .aviso-cego {
+    margin-top: 20px; padding: 14px 16px; border-radius: var(--radius-sm);
+    background: rgba(15,23,42,.04); border: 1px solid var(--line);
+    display: flex; gap: 10px; align-items: flex-start; font-size: .88rem; color: var(--ink-soft);
+  }
+  .aviso-cego .material-symbols-rounded { color: var(--primary); flex-shrink: 0; }
+  .form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+  @media (max-width: 520px) { .form-actions { flex-direction: column-reverse; } .form-actions .btn { width: 100%; justify-content: center; } .criterio { justify-content: center; } }
+</style>
+{% endblock %}
+
+{% load avaliacoes_extras %}
+{% block content %}
+<div class="form-shell">
+  <form class="glass form-card" method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="form-head">
+      <h1>Avaliar experiência</h1>
+      <p>Ordem: <strong>{{ solicitacao.titulo }}</strong></p>
+      <div class="avaliado-card">
+        <div class="avaliado-card__avatar">
+          {{ avaliado.get_short_name|default:avaliado.username|slice:":1"|upper }}
+        </div>
+        <div>
+          <strong>{{ avaliado.get_full_name|default:avaliado.username }}</strong>
+          <div style="font-size:.8rem;color:var(--ink-faint);">
+            {% if papel == 'CP' %}Você está avaliando o profissional{% else %}Você está avaliando o cliente{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% for nome_criterio in nomes_criterios %}
+      {% with campo=form|campo_do_formulario:nome_criterio %}
+        {% include "servconecta/_estrelas.html" %}
+      {% endwith %}
+    {% endfor %}
+
+    <div class="tags-bloco">
+      {{ form.tags.label_tag }}
+      {{ form.tags }}
+      {{ form.tags.errors }}
+    </div>
+
+    <div class="field-comentario">
+      <label for="{{ form.comentario.id_for_label }}">{{ form.comentario.label }}</label>
+      {{ form.comentario }}
+      {{ form.comentario.errors }}
+    </div>
+
+    <div class="aviso-cego">
+      <span class="material-symbols-rounded">visibility_off</span>
+      <span><strong>Avaliação às cegas:</strong> sua nota só será revelada quando a outra parte também avaliar — ninguém sofre retaliação por nota baixa.</span>
+    </div>
+
+    <div class="form-actions">
+      <a class="btn btn--outline" href="{% url 'solicitacao_detalhe' solicitacao.pk %}">
+        <span class="material-symbols-rounded">close</span> Cancelar
+      </a>
+      <button class="btn btn--filled" type="submit">
+        <span class="material-symbols-rounded">send</span> Enviar avaliação
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

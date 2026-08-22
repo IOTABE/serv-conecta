@@ -1,0 +1,88 @@
+{% extends "servconecta/base.html" %}
+
+{% block title %}Concluir serviço &middot; ServConecta{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-shell { max-width: 640px; margin: 32px auto; padding-bottom: 32px; }
+  .form-card { padding: 32px; border-radius: 20px; }
+  .passos {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    margin-top: 12px; font-size: .78rem; color: var(--ink-faint); font-weight: 600;
+  }
+  .passos .passo--ativo { color: var(--primary); }
+  .form-head h1 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+  .field label { font-size: .85rem; font-weight: 600; color: var(--md-on-surface-variant); }
+  .field input, .field textarea {
+    width: 100%; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid var(--glass-border); background: var(--glass-input-bg);
+    color: var(--md-on-surface); font-family: inherit; font-size: .95rem;
+  }
+  .field textarea { resize: vertical; min-height: 90px; }
+  .field input:focus, .field textarea:focus {
+    outline: none; border-color: var(--md-primary);
+    box-shadow: 0 0 0 3px rgba(25,118,210,.18);
+  }
+  .field-help { margin: 0; font-size: .78rem; color: var(--ink-faint); }
+  .errorlist { list-style: none; padding: 0; margin: 0; color: var(--md-error); font-size: .8rem; }
+  .aviso-confirmacao {
+    margin-top: 20px; padding: 14px 16px; border-radius: var(--radius-sm);
+    background: rgba(5,150,105,.07); border: 1px solid rgba(5,150,105,.25);
+    display: flex; gap: 10px; align-items: flex-start; font-size: .88rem; color: var(--ink-soft);
+  }
+  .aviso-confirmacao .material-symbols-rounded { color: var(--accent); flex-shrink: 0; }
+  .form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+  @media (max-width: 520px) { .form-actions { flex-direction: column-reverse; } .form-actions .btn { width: 100%; justify-content: center; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-shell">
+  <form class="glass form-card" method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="form-head">
+      <h1>Marcar como concluído</h1>
+      <div class="passos">
+        <span class="passo passo--ativo">1. Solicitação</span>
+        <span class="material-symbols-rounded" style="font-size:16px">chevron_right</span>
+        <span class="passo">2. Confirmação da outra parte</span>
+        <span class="material-symbols-rounded" style="font-size:16px">chevron_right</span>
+        <span class="passo">3. Avaliações</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="{{ form.valor_final.id_for_label }}">{{ form.valor_final.label }}</label>
+      {{ form.valor_final }}
+      {% if form.valor_final.help_text %}<p class="field-help">{{ form.valor_final.help_text }}</p>{% endif %}
+      {{ form.valor_final.errors }}
+    </div>
+
+    <div class="field">
+      <label for="{{ form.observacoes.id_for_label }}">{{ form.observacoes.label }}</label>
+      {{ form.observacoes }}
+      {{ form.observacoes.errors }}
+    </div>
+
+    <div class="aviso-confirmacao">
+      <span class="material-symbols-rounded">verified_user</span>
+      <span>
+        A outra parte receberá uma notificação para <strong>aprovar o término</strong>
+        ou abrir disputa. A ordem só vira "Concluída" com essa dupla confirmação —
+        e as avaliações mútuas são liberadas logo depois.
+      </span>
+    </div>
+
+    <div class="form-actions">
+      <a class="btn btn--outline" href="{% url 'solicitacao_detalhe' solicitacao.pk %}">
+        <span class="material-symbols-rounded">close</span> Cancelar
+      </a>
+      <button class="btn btn--filled" type="submit">
+        <span class="material-symbols-rounded">task_alt</span> Enviar para confirmação
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

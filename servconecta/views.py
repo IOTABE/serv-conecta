@@ -6,10 +6,36 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
-from .forms import CadastroForm, OfertaForm, PropostaForm, SolicitacaoForm
-from .models import Categoria, Subcategoria, MensagemChat, Oferta, Proposta, Solicitacao
+from .forms import (
+    AvaliacaoForm,
+    CadastroForm,
+    DisputaForm,
+    EncerramentoForm,
+    OfertaForm,
+    PropostaForm,
+    SolicitacaoForm,
+)
+from .models import (
+    Avaliacao,
+    Categoria,
+    Encerramento,
+    MensagemChat,
+    Notificacao,
+    Oferta,
+    Proposta,
+    Solicitacao,
+    Subcategoria,
+)
+from .reputacao import (
+    avaliacoes_visiveis,
+    notificar,
+    pode_criar_solicitacao,
+    tem_selo_elite,
+    total_servicos_finalizados,
+)
 
 User = get_user_model()
 
@@ -26,8 +52,13 @@ def api_subcategorias(request):
 
 def home(request):
     """Página inicial: hero, destaques e itens recentes."""
+    ofertas = list(
+        Oferta.objects.select_related("prestador", "categoria", "subcategoria")[:4]
+    )
+    for oferta in ofertas:
+        oferta.selo_elite = tem_selo_elite(oferta.prestador)
     context = {
-        "ofertas": Oferta.objects.select_related("prestador", "categoria", "subcategoria")[:4],
+        "ofertas": ofertas,
         "solicitacoes": Solicitacao.objects.select_related("cliente", "categoria", "subcategoria")[:4],
         "categorias": Categoria.objects.prefetch_related("subcategorias")[:6],
     }
@@ -68,6 +99,8 @@ def ofertas(request):
     )
 
     page_obj = _paginar(request, qs)
+    for oferta in page_obj.object_list:
+        oferta.selo_elite = tem_selo_elite(oferta.prestador)
     context = {
         "ofertas": page_obj.object_list,
         "page_obj": page_obj,
@@ -128,7 +161,17 @@ def oferta_detalhe(request, pk):
     oferta = get_object_or_404(
         Oferta.objects.select_related("prestador", "categoria", "subcategoria"), pk=pk
     )
-    return render(request, "servconecta/oferta_detalhe.html", {"oferta": oferta})
+    return render(request, "servconecta/oferta_detalhe.html", {
+        "oferta": oferta,
+        "nota_prestador": Avaliacao.nota_media_de(oferta.prestador),
+        "selo_prestador": tem_selo_elite(oferta.prestador),
+        "servicos_finalizados": total_servicos_finalizados(oferta.prestador),
+    })
+
+
+def _participante(user, solicitacao):
+    """Cliente ou o profissional engajado na ordem de serviço."""
+    return user.is_authenticated and user in solicitacao.participantes()
 
 
 def solicitacao_detalhe(request, pk):
@@ -137,6 +180,40 @@ def solicitacao_detalhe(request, pk):
     )
     proposta_do_usuario = None
     propostas = None
+    encerramento = None
+    ja_avaliou = False
+    avaliacoes_reveladas = []
+    outra_avaliacao_pendente = False
+
+    participante = _participante(request.user, solicitacao)
+    if participante:
+        encerramento = (
+            Encerramento.objects.filter(solicitacao=solicitacao)
+            .exclude(status=Encerramento.Status.CANCELADO)
+            .select_related("solicitado_por", "respondido_por")
+            .first()
+        )
+        ja_avaliou = solicitacao.avaliacoes.filter(avaliador=request.user).exists()
+        if ja_avaliou:
+            reveladas = avaliacoes_visiveis(solicitacao)
+            if len(reveladas) < 2:
+                outra_avaliacao_pendente = True
+            else:
+                for av in reveladas:
+                    avaliacoes_reveladas.append({
+                        "titulo": (
+                            f"{av.avaliador.get_short_name() or av.avaliador.username}"
+                            f" avaliou {av.avaliado.get_short_name() or av.avaliado.username}"
+                        ),
+                        "media": av.media,
+                        "data": av.criada_em,
+                        "notas": [
+                            (Avaliacao.LABELS[c], getattr(av, f"nota_{c}"))
+                            for c in Avaliacao.CRITERIOS[av.papel]
+                        ],
+                        "tags": [t for t in av.tags.split(", ") if t],
+                        "comentario": av.comentario,
+                    })
 
     if request.user.is_authenticated:
         if request.user == solicitacao.cliente:
@@ -152,15 +229,259 @@ def solicitacao_detalhe(request, pk):
                 solicitacao=solicitacao, profissional=request.user
             ).first()
 
-    return render(
-        request,
-        "servconecta/solicitacao_detalhe.html",
-        {
-            "solicitacao": solicitacao,
-            "proposta_do_usuario": proposta_do_usuario,
-            "propostas": propostas,
-        },
-    )
+    profissional_ativo = solicitacao.profissional_ativo
+    context = {
+        "solicitacao": solicitacao,
+        "proposta_do_usuario": proposta_do_usuario,
+        "propostas": propostas,
+        "encerramento": encerramento,
+        "participante": participante,
+        "profissional_ativo": profissional_ativo,
+        "ja_avaliou": ja_avaliou,
+        "avaliacoes_reveladas": avaliacoes_reveladas,
+        "outra_avaliacao_pendente": outra_avaliacao_pendente,
+        "nota_profissional": Avaliacao.nota_media_de(profissional_ativo) if profissional_ativo else None,
+        "selo_profissional": tem_selo_elite(profissional_ativo) if profissional_ativo else False,
+    }
+    return render(request, "servconecta/solicitacao_detalhe.html", context)
+
+
+@login_required
+def solicitacao_concluir(request, pk):
+    """Etapa 1: cliente ou prestador marca a ordem como concluída."""
+    solicitacao = get_object_or_404(Solicitacao, pk=pk)
+
+    if not _participante(request.user, solicitacao):
+        messages.error(request, "Apenas quem participa da ordem pode concluí-la.")
+        return redirect("solicitacao_detalhe", pk=pk)
+
+    if solicitacao.status == Solicitacao.Status.CONCLUIDA:
+        messages.info(request, "Esta ordem já foi concluída.")
+        return redirect("solicitacao_detalhe", pk=pk)
+
+    pendente = Encerramento.objects.filter(
+        solicitacao=solicitacao,
+        status__in=[Encerramento.Status.PENDENTE, Encerramento.Status.DISPUTADO],
+    ).first()
+    if pendente:
+        messages.info(
+            request, "Já existe um pedido de encerramento em andamento para esta ordem."
+        )
+        return redirect("solicitacao_detalhe", pk=pk)
+
+    if request.method == "POST":
+        form = EncerramentoForm(request.POST)
+        if form.is_valid():
+            encerramento = form.save(commit=False)
+            encerramento.solicitacao = solicitacao
+            encerramento.solicitado_por = request.user
+            encerramento.save()
+            if solicitacao.status == Solicitacao.Status.ABERTA:
+                solicitacao.status = Solicitacao.Status.EM_ANDAMENTO
+                solicitacao.save(update_fields=["status"])
+
+            outro = encerramento.outra_parte
+            papel = "cliente" if request.user == solicitacao.cliente else "profissional"
+            notificar(
+                outro,
+                "Confirma o término do serviço?",
+                f"O {papel} marcou o serviço “{solicitacao.titulo}” como concluído. "
+                "Confirme o término ou abra uma disputa.",
+                url=reverse("solicitacao_detalhe", args=[pk]),
+            )
+            messages.success(
+                request,
+                f"Conclusão enviada! {outro.get_short_name() or outro.username} "
+                "foi notificado para confirmar.",
+            )
+            return redirect("solicitacao_detalhe", pk=pk)
+    else:
+        form = EncerramentoForm(initial={"valor_final": solicitacao.orcamento})
+
+    return render(request, "servconecta/encerramento_form.html", {
+        "form": form,
+        "solicitacao": solicitacao,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def encerramento_aprovar(request, pk):
+    """Etapa 2: a outra parte aprova — status vira Concluída e avaliações liberam."""
+    encerramento = get_object_or_404(Encerramento.objects.select_related("solicitacao"), pk=pk)
+    solicitacao = encerramento.solicitacao
+
+    if not _participante(request.user, solicitacao) or request.user == encerramento.solicitado_por:
+        messages.error(request, "Apenas a outra parte pode confirmar este encerramento.")
+        return redirect("solicitacao_detalhe", pk=solicitacao.pk)
+
+    if encerramento.status != Encerramento.Status.PENDENTE:
+        messages.info(request, "Este encerramento já foi respondido.")
+        return redirect("solicitacao_detalhe", pk=solicitacao.pk)
+
+    encerramento.status = Encerramento.Status.APROVADO
+    encerramento.respondido_por = request.user
+    encerramento.save(update_fields=["status", "respondido_por", "atualizado_em"])
+
+    solicitacao.status = Solicitacao.Status.CONCLUIDA
+    solicitacao.save(update_fields=["status", "atualizado_em"])
+
+    for usuario in solicitacao.participantes():
+        notificar(
+            usuario,
+            "Serviço concluído! Avalie a experiência",
+            f"A ordem “{solicitacao.titulo}” foi concluída. Sua avaliação às cegas "
+            "está liberada — ela só será revelada quando ambos avaliarem.",
+            url=reverse("solicitacao_avaliar", args=[solicitacao.pk]),
+        )
+
+    messages.success(request, "Serviço concluído! Agora vocês podem se avaliar.")
+    return redirect("solicitacao_detalhe", pk=solicitacao.pk)
+
+
+@login_required
+def encerramento_disputar(request, pk):
+    """Etapa 2 alternativa: abre disputa / suporte em vez de aprovar."""
+    encerramento = get_object_or_404(Encerramento.objects.select_related("solicitacao"), pk=pk)
+    solicitacao = encerramento.solicitacao
+
+    if not _participante(request.user, solicitacao) or request.user == encerramento.solicitado_por:
+        messages.error(request, "Apenas a outra parte pode contestar este encerramento.")
+        return redirect("solicitacao_detalhe", pk=solicitacao.pk)
+
+    if encerramento.status != Encerramento.Status.PENDENTE:
+        messages.info(request, "Este encerramento já foi respondido.")
+        return redirect("solicitacao_detalhe", pk=solicitacao.pk)
+
+    if request.method == "POST":
+        form = DisputaForm(request.POST)
+        if form.is_valid():
+            encerramento.status = Encerramento.Status.DISPUTADO
+            encerramento.respondido_por = request.user
+            encerramento.resposta_observacoes = form.cleaned_data["motivo"]
+            encerramento.save()
+            for usuario in solicitacao.participantes():
+                notificar(
+                    usuario,
+                    "Disputa aberta na sua ordem de serviço",
+                    f"A ordem “{solicitacao.titulo}” está em disputa e será analisada "
+                    f"pelo suporte. Motivo: {form.cleaned_data['motivo'][:200]}",
+                    url=reverse("solicitacao_detalhe", args=[solicitacao.pk]),
+                    enviar_email=False,
+                )
+            messages.warning(
+                request, "Disputa registrada. Nosso suporte entrará em contato."
+            )
+            return redirect("solicitacao_detalhe", pk=solicitacao.pk)
+    else:
+        form = DisputaForm()
+
+    return render(request, "servconecta/encerramento_disputa.html", {
+        "form": form,
+        "solicitacao": solicitacao,
+        "encerramento": encerramento,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def encerramento_cancelar(request, pk):
+    """Quem pediu o encerramento pode cancelar antes da resposta."""
+    encerramento = get_object_or_404(Encerramento, pk=pk)
+    solicitacao = encerramento.solicitacao
+    if request.user != encerramento.solicitado_por:
+        messages.error(request, "Apenas quem solicitou pode cancelar.")
+        return redirect("solicitacao_detalhe", pk=solicitacao.pk)
+    if encerramento.status != Encerramento.Status.PENDENTE:
+        messages.info(request, "Este encerramento já foi respondido.")
+        return redirect("solicitacao_detalhe", pk=solicitacao.pk)
+    encerramento.status = Encerramento.Status.CANCELADO
+    encerramento.save(update_fields=["status", "atualizado_em"])
+    messages.info(request, "Pedido de conclusão cancelado.")
+    return redirect("solicitacao_detalhe", pk=solicitacao.pk)
+
+
+@login_required
+def solicitacao_avaliar(request, pk):
+    """Etapa 3: avaliação mútua às cegas (liberada após a dupla confirmação)."""
+    solicitacao = get_object_or_404(Solicitacao, pk=pk)
+
+    if solicitacao.status != Solicitacao.Status.CONCLUIDA:
+        messages.error(request, "As avaliações abrem após a confirmação do término.")
+        return redirect("solicitacao_detalhe", pk=pk)
+
+    if not _participante(request.user, solicitacao):
+        messages.error(request, "Apenas participantes da ordem podem avaliar.")
+        return redirect("solicitacao_detalhe", pk=pk)
+
+    profissional = solicitacao.profissional_ativo
+    if profissional is None:
+        messages.error(request, "Nenhum profissional vinculado a esta ordem.")
+        return redirect("solicitacao_detalhe", pk=pk)
+
+    if Avaliacao.objects.filter(solicitacao=solicitacao, avaliador=request.user).exists():
+        messages.info(request, "Você já avaliou esta ordem.")
+        return redirect("solicitacao_detalhe", pk=pk)
+
+    if request.user == solicitacao.cliente:
+        papel = Avaliacao.Papel.CLIENTE_AVALIA_PRESTADOR
+        avaliado = profissional
+    else:
+        papel = Avaliacao.Papel.PRESTADOR_AVALIA_CLIENTE
+        avaliado = solicitacao.cliente
+
+    if request.method == "POST":
+        form = AvaliacaoForm(papel, request.POST)
+        if form.is_valid():
+            avaliacao = Avaliacao(
+                solicitacao=solicitacao,
+                avaliador=request.user,
+                avaliado=avaliado,
+            )
+            form.aplicar_em(avaliacao)
+            avaliacao.save()
+            outro = avaliado
+            ambos = solicitacao.avaliacoes.count() >= 2
+            if ambos:
+                notificar(
+                    outro,
+                    "Avaliação revelada",
+                    f"Avaliações da ordem “{solicitacao.titulo}” foram liberadas — "
+                    "vocês dois já responderam.",
+                    url=reverse("solicitacao_detalhe", args=[pk]),
+                )
+                messages.success(request, "Avaliação enviada! As notas dos dois lados já estão visíveis.")
+            else:
+                messages.success(
+                    request,
+                    "Avaliação registrada! Ela ficará visível quando a outra parte também avaliar.",
+                )
+            return redirect("solicitacao_detalhe", pk=pk)
+    else:
+        form = AvaliacaoForm(papel)
+
+    return render(request, "servconecta/avaliacao_form.html", {
+        "form": form,
+        "solicitacao": solicitacao,
+        "avaliado": avaliado,
+        "papel": papel,
+        "nomes_criterios": Avaliacao.CRITERIOS[papel],
+    })
+
+
+@login_required
+def notificacoes(request):
+    """Central de notificações in-app; marca tudo como lido ao abrir."""
+    lista = list(Notificacao.objects.filter(destinatario=request.user)[:50])
+    nao_lidas = [n for n in lista if not n.lida]
+    if nao_lidas:
+        Notificacao.objects.filter(
+            pk__in=[n.pk for n in nao_lidas]
+        ).update(lida=True)
+    return render(request, "servconecta/notificacoes.html", {
+        "notificacoes": lista,
+        "total_nao_lidas": len(nao_lidas),
+    })
 
 
 @login_required
@@ -207,6 +528,11 @@ def oferta_editar(request, pk):
 
 @login_required
 def solicitacao_criar(request):
+    permitido, motivo = pode_criar_solicitacao(request.user)
+    if not permitido:
+        messages.error(request, motivo)
+        return redirect("perfil")
+
     if request.method == "POST":
         form = SolicitacaoForm(request.POST)
         if form.is_valid():
@@ -311,6 +637,11 @@ def contratar_oferta(request, pk):
     if request.user == oferta.prestador:
         messages.error(request, "Você não pode contratar sua própria oferta.")
         return redirect("oferta_detalhe", pk=pk)
+
+    permitido, motivo = pode_criar_solicitacao(request.user)
+    if not permitido:
+        messages.error(request, motivo)
+        return redirect("perfil")
 
     if request.method == "POST":
         form = SolicitacaoForm(request.POST)

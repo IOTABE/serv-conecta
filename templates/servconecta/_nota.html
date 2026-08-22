@@ -1,0 +1,10 @@
+{% load avaliacoes_extras %}
+{# Exibição de média em estrelas. Uso: {% include "servconecta/_nota.html" with nota=4.8 %} #}
+<span class="nota-exibida">
+  <span class="nota-exibida__estrelas">
+    {% for i in "12345" %}
+      <span class="material-symbols-rounded {% if forloop.counter|estrela_cheia:nota %}nota-cheia{% else %}nota-vazia{% endif %}">star</span>
+    {% endfor %}
+  </span>
+  <strong>{% if nota %}{{ nota }}{% else %}&mdash;{% endif %}</strong>
+</span>

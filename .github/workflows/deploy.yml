@@ -57,6 +57,7 @@ jobs:
                 echo "Atualizando timestamp em tmp/restart.txt..."
                 mkdir -p tmp && touch tmp/restart.txt
             fi
+            pkill -HUP gunicorn
 
             echo ">>> Deploy finalizado com sucesso!"
 

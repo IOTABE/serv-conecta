@@ -17,6 +17,11 @@ urlpatterns = [
     path("solicitacoes/nova/", views.solicitacao_criar, name="solicitacao_criar"),
     path("solicitacoes/<int:pk>/editar/", views.solicitacao_editar, name="solicitacao_editar"),
     path("solicitacoes/<int:pk>/", views.solicitacao_detalhe, name="solicitacao_detalhe"),
+    path("solicitacoes/<int:pk>/concluir/", views.solicitacao_concluir, name="solicitacao_concluir"),
+    path("solicitacoes/<int:pk>/avaliar/", views.solicitacao_avaliar, name="solicitacao_avaliar"),
+    path("encerramentos/<int:pk>/aprovar/", views.encerramento_aprovar, name="encerramento_aprovar"),
+    path("encerramentos/<int:pk>/disputa/", views.encerramento_disputar, name="encerramento_disputar"),
+    path("encerramentos/<int:pk>/cancelar/", views.encerramento_cancelar, name="encerramento_cancelar"),
     path("solicitacoes/<int:pk>/proposta/", views.proposta_criar, name="proposta_criar"),
     path("solicitacoes/<int:pk>/chat/", views.chat_view, name="chat"),
     path("solicitacoes/<int:pk>/chat/<int:outro_id>/", views.chat_view, name="chat_com"),
@@ -35,6 +40,8 @@ urlpatterns = [
     path("cadastro/", views.cadastro, name="cadastro"),
     # Perfil
     path("perfil/", views.perfil, name="perfil"),
+    # Notificações
+    path("notificacoes/", views.notificacoes, name="notificacoes"),
     # API
     path("api/subcategorias/", views.api_subcategorias, name="api_subcategorias"),
 ]

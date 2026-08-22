@@ -47,5 +47,5 @@ else
     echo "Aviso: Nenhum gerenciador de serviço encontrado. Atualizando tmp/restart.txt."
     mkdir -p tmp && touch tmp/restart.txt
 fi
-
+pkill -HUP gunicorn
 echo "=== Deploy concluído com sucesso! ==="

@@ -58,6 +58,22 @@
   }
   .form-errors ul { margin: 0; padding-left: 18px; }
 
+  .termos {
+    margin: 18px 0;
+    font-size: .82rem;
+    color: var(--ink-soft);
+    text-align: center;
+    line-height: 1.5;
+  }
+  .termos a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: rgba(26,86,219,.35);
+    text-underline-offset: 2px;
+  }
+  .termos a:hover { text-decoration-color: var(--primary); }
+
   .auth-foot { margin-top: 20px; text-align: center; font-size: .9rem; color: var(--ink-soft); }
   .auth-foot a { color: var(--primary); font-weight: 500; }
   .auth-foot a:hover { text-decoration: underline; }
@@ -137,9 +153,15 @@
         {% for error in form.password2.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
       </div>
 
-      <button type="submit" class="btn btn--filled btn--block">
-        <span class="material-symbols-rounded">how_to_reg</span> Criar conta grátis
-      </button>
+  <p class="termos">
+    Ao confirmar o meu cadastro, aceito os
+    <a href="/media/Termos_de_uso.pdf" target="_blank" rel="noopener">Termos de Uso</a>
+    e a <a href="/media/Termos_de_uso.pdf" target="_blank" rel="noopener">Política de Privacidade</a>.
+  </p>
+
+  <button type="submit" class="btn btn--filled btn--block">
+    <span class="material-symbols-rounded">how_to_reg</span> Criar conta grátis
+  </button>
     </form>
 
     <div class="auth-foot">

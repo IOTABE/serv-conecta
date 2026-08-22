@@ -1,0 +1,17 @@
+{# Entrada de nota: 5 estrelas por critério. Uso: {% include with campo=form.x %} #}
+<div class="criterio">
+  <span class="criterio__nome">{{ campo.label }}</span>
+  <div class="estrelas" role="radiogroup" aria-label="{{ campo.label }}">
+    {% for opcao in campo.field.choices reversed %}
+      <input type="radio" name="{{ campo.name }}" id="{{ campo.name }}_{{ opcao.0 }}"
+             value="{{ opcao.0 }}" required
+             {% if campo.value|stringformat:"s" == opcao.0|stringformat:"s" %}checked{% endif %}>
+      <label for="{{ campo.name }}_{{ opcao.0 }}" title="{{ opcao.1 }}">
+        <span class="material-symbols-rounded">star</span>
+      </label>
+    {% endfor %}
+  </div>
+  {% if campo.errors %}
+    <ul class="errorlist">{% for erro in campo.errors %}<li>{{ erro }}</li>{% endfor %}</ul>
+  {% endif %}
+</div>

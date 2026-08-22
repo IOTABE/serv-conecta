@@ -1,7 +1,17 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Categoria, Subcategoria, Oferta, Solicitacao, Proposta, MensagemChat
+from .models import (
+    Avaliacao,
+    Categoria,
+    Encerramento,
+    MensagemChat,
+    Notificacao,
+    Oferta,
+    Proposta,
+    Solicitacao,
+    Subcategoria,
+)
 
 
 class SubcategoriaInline(admin.TabularInline):
@@ -152,3 +162,39 @@ class MensagemChatAdmin(admin.ModelAdmin):
     search_fields = ("mensagem", "remetente__username", "destinatario__username", "solicitacao__titulo")
     autocomplete_fields = ("solicitacao", "remetente", "destinatario")
     ordering = ("criado_em",)
+
+
+@admin.register(Encerramento)
+class EncerramentoAdmin(admin.ModelAdmin):
+    list_display = ("solicitacao", "solicitado_por", "status", "valor_final", "criado_em")
+    list_filter = ("status",)
+    search_fields = ("solicitacao__titulo", "solicitado_por__username")
+    autocomplete_fields = ("solicitacao", "solicitado_por", "respondido_por")
+    readonly_fields = ("criado_em", "atualizado_em")
+    ordering = ("-criado_em",)
+
+
+@admin.register(Avaliacao)
+class AvaliacaoAdmin(admin.ModelAdmin):
+    list_display = ("solicitacao", "papel", "avaliador", "avaliado", "media", "criada_em")
+    list_filter = ("papel",)
+    search_fields = (
+        "avaliador__username",
+        "avaliado__username",
+        "solicitacao__titulo",
+        "tags",
+    )
+    autocomplete_fields = ("solicitacao", "avaliador", "avaliado")
+    readonly_fields = ("criada_em",)
+
+    @admin.display(description="Nota média")
+    def media(self, obj):
+        return obj.media if obj.media is not None else "—"
+
+
+@admin.register(Notificacao)
+class NotificacaoAdmin(admin.ModelAdmin):
+    list_display = ("destinatario", "titulo", "lida", "criada_em")
+    list_filter = ("lida",)
+    search_fields = ("titulo", "texto", "destinatario__username")
+    readonly_fields = ("criada_em",)

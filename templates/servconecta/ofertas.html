@@ -78,6 +78,11 @@
               </div>
             {% endif %}
             <h3 class="offer__title">{{ oferta.titulo }}</h3>
+        {% if oferta.selo_elite %}
+          <span style="display:inline-flex;align-items:center;gap:4px;align-self:flex-start;font-size:.72rem;font-weight:700;color:var(--accent);background:rgba(5,150,105,.1);padding:3px 9px;border-radius:999px;">
+            <span class="material-symbols-rounded" style="font-size:14px;">verified</span> Prestador Destaque
+          </span>
+        {% endif %}
             <p class="offer__desc">{{ oferta.descricao }}</p>
             <div class="offer__meta">
               <span class="price">
