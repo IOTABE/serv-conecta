@@ -122,6 +122,9 @@
         {% if user.is_authenticated %}
           {% if user == oferta.prestador %}
             <p style="font-size:.85rem;color:var(--ink-soft);text-align:center;">Esta é sua oferta.</p>
+            <a href="{% url 'oferta_editar' oferta.pk %}" class="btn btn--outline btn--block">
+              <span class="material-symbols-rounded">edit</span> Editar oferta
+            </a>
           {% else %}
             <a href="{% url 'contratar' oferta.pk %}" class="btn btn--filled btn--block">
               <span class="material-symbols-rounded">handshake</span> Contratar serviço

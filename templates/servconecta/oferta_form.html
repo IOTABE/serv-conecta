@@ -1,6 +1,6 @@
 {% extends "servconecta/base.html" %}
 
-{% block title %}Nova oferta &middot; ServConecta{% endblock %}
+{% block title %}{% if editando %}Editar oferta{% else %}Nova oferta{% endif %} &middot; ServConecta{% endblock %}
 {% block description %}Publique uma nova oferta de serviço na ServConecta.{% endblock %}
 
 {% block extra_head %}
@@ -84,6 +84,32 @@
     justify-content: flex-end;
     margin-top: 8px;
   }
+  .field-help {
+    margin: 0;
+    font-size: .78rem;
+    color: var(--ink-faint);
+  }
+  .imagem-atual {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .imagem-atual img {
+    width: 180px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--e1);
+  }
+  .imagem-atual__remover {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .85rem;
+    color: var(--md-error);
+    font-weight: 500;
+    cursor: pointer;
+  }
   @media (max-width: 640px) {
     .form-row { grid-template-columns: 1fr; }
     .form-card { padding: 24px; }
@@ -99,8 +125,8 @@
     {% csrf_token %}
 
     <div class="form-head">
-      <h1>Nova oferta</h1>
-      <p>Descreva o serviço que você oferece para os clientes encontrarem você.</p>
+      <h1>{% if editando %}Editar oferta{% else %}Nova oferta{% endif %}</h1>
+      <p>{% if editando %}Atualize as informações da sua oferta, inclusive Categoria e Subcategoria.{% else %}Descreva o serviço que você oferece para os clientes encontrarem você.{% endif %}</p>
     </div>
 
     {% if form.non_field_errors %}
@@ -154,21 +180,35 @@
         </div>
       </div>
 
+      {% if editando and oferta.imagem %}
+        <div class="field">
+          <label>Imagem atual</label>
+          <div class="imagem-atual">
+            <img src="{{ oferta.imagem.url }}" alt="{{ oferta.titulo }}" />
+            <label class="imagem-atual__remover">
+              <input type="checkbox" name="remover_imagem" value="1" />
+              Remover imagem
+            </label>
+          </div>
+        </div>
+      {% endif %}
+
       <div class="field">
-        <label for="{{ form.imagem.id_for_label }}">Imagem</label>
+        <label for="{{ form.imagem.id_for_label }}">{% if editando %}Nova imagem (opcional){% else %}Imagem{% endif %}</label>
         {{ form.imagem }}
+        {% if form.imagem.help_text %}<p class="field-help">{{ form.imagem.help_text }}</p>{% endif %}
         {{ form.imagem.errors }}
       </div>
     </div>
 
     <div class="form-actions">
-      <a class="btn btn--outline" href="{% url 'ofertas' %}">
+      <a class="btn btn--outline" href="{% if editando %}{% url 'oferta_detalhe' oferta.pk %}{% else %}{% url 'ofertas' %}{% endif %}">
         <span class="material-symbols-rounded">close</span>
         Cancelar
       </a>
       <button class="btn btn--filled" type="submit">
-        <span class="material-symbols-rounded">check</span>
-        Publicar oferta
+        <span class="material-symbols-rounded">{% if editando %}save{% else %}check{% endif %}</span>
+        {% if editando %}Salvar alterações{% else %}Publicar oferta{% endif %}
       </button>
     </div>
   </form>

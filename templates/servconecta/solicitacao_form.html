@@ -1,6 +1,6 @@
 {% extends "servconecta/base.html" %}
 
-{% block title %}Nova solicitação &middot; ServConecta{% endblock %}
+{% block title %}{% if editando %}Editar solicitação{% else %}Nova solicitação{% endif %} &middot; ServConecta{% endblock %}
 {% block description %}Publique uma nova solicitação de serviço na ServConecta.{% endblock %}
 
 {% block extra_head %}
@@ -125,8 +125,8 @@
     {% csrf_token %}
 
     <div class="form-head">
-      <h1>Nova solicitação</h1>
-      <p>Descreva o serviço que você precisa para receber propostas de profissionais.</p>
+      <h1>{% if editando %}Editar solicitação{% else %}Nova solicitação{% endif %}</h1>
+      <p>{% if editando %}Atualize as informações da sua solicitação, inclusive Categoria e Subcategoria.{% else %}Descreva o serviço que você precisa para receber propostas de profissionais.{% endif %}</p>
     </div>
 
 
@@ -183,13 +183,13 @@
     </div>
 
         <div class="form-actions">
-      <a class="btn btn--outline" href="{% url 'solicitacoes' %}">
+      <a class="btn btn--outline" href="{% if editando %}{% url 'solicitacao_detalhe' solicitacao.pk %}{% else %}{% url 'solicitacoes' %}{% endif %}">
         <span class="material-symbols-rounded">close</span>
         Cancelar
       </a>
       <button class="btn btn--filled" type="submit">
-        <span class="material-symbols-rounded">check</span>
-        Publicar solicitação
+        <span class="material-symbols-rounded">{% if editando %}save{% else %}check{% endif %}</span>
+        {% if editando %}Salvar alterações{% else %}Publicar solicitação{% endif %}
       </button>
     </div>
 

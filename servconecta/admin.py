@@ -6,17 +6,24 @@ from .models import Categoria, Subcategoria, Oferta, Solicitacao, Proposta, Mens
 
 class SubcategoriaInline(admin.TabularInline):
     model = Subcategoria
-    extra = 1
+    extra = 3
     prepopulated_fields = {"slug": ("nome",)}
+    show_change_link = True
+    verbose_name = "Subcategoria"
+    verbose_name_plural = "Subcategorias desta Categoria"
 
 
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
-    list_display = ("nome", "slug")
+    list_display = ("nome", "slug", "total_subcategorias")
     search_fields = ("nome",)
     prepopulated_fields = {"slug": ("nome",)}
     ordering = ("nome",)
     inlines = [SubcategoriaInline]
+
+    @admin.display(description="Total de Subcategorias")
+    def total_subcategorias(self, obj):
+        return obj.subcategorias.count()
 
 
 @admin.register(Subcategoria)
@@ -24,6 +31,7 @@ class SubcategoriaAdmin(admin.ModelAdmin):
     list_display = ("nome", "categoria", "slug")
     list_filter = ("categoria",)
     search_fields = ("nome", "categoria__nome")
+    autocomplete_fields = ("categoria",)
     prepopulated_fields = {"slug": ("nome",)}
     ordering = ("categoria__nome", "nome")
 

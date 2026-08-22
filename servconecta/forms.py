@@ -1,10 +1,22 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
+from django.core.exceptions import ValidationError
 
 from .models import Oferta, Solicitacao, Proposta, Subcategoria
 
 User = get_user_model()
+
+TAMANHO_MAXIMO_IMAGEM_MB = 5
+
+
+def validar_tamanho_imagem(imagem):
+    """Impede uploads de imagem acima do limite definido."""
+    limite = TAMANHO_MAXIMO_IMAGEM_MB * 1024 * 1024
+    if imagem.size > limite:
+        raise ValidationError(
+            f"A imagem deve ter no máximo {TAMANHO_MAXIMO_IMAGEM_MB} MB."
+        )
 
 
 class CadastroForm(UserCreationForm):
@@ -25,6 +37,17 @@ class CadastroForm(UserCreationForm):
 
 
 class OfertaForm(forms.ModelForm):
+    imagem = forms.ImageField(
+        label="Imagem",
+        required=False,
+        validators=[validar_tamanho_imagem],
+        help_text=(
+            f"JPG ou PNG, até {TAMANHO_MAXIMO_IMAGEM_MB} MB. "
+            "A imagem é redimensionada automaticamente para o padrão dos cards."
+        ),
+        widget=forms.ClearableFileInput(attrs={"accept": "image/*"}),
+    )
+
     class Meta:
         model = Oferta
         fields = [

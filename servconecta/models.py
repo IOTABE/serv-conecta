@@ -1,6 +1,28 @@
+import io
+
+from PIL import Image, ImageOps
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.db import models
 from django.urls import reverse
+from django.utils.text import slugify
+
+LADO_MAXIMO_IMAGEM = 1280
+
+
+def padronizar_imagem(imagem, lado_maximo=LADO_MAXIMO_IMAGEM):
+    """Redimensiona, corrige rotação e reencodea a imagem como JPEG padrão."""
+    imagem.seek(0)
+    img = ImageOps.exif_transpose(Image.open(imagem))
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    if max(img.size) > lado_maximo:
+        img.thumbnail((lado_maximo, lado_maximo), Image.LANCZOS)
+    buffer = io.BytesIO()
+    img.save(buffer, format="JPEG", quality=85, optimize=True)
+    nome_arquivo = (imagem.name or "oferta").rsplit("/", 1)[-1]
+    nome_base = slugify(nome_arquivo.rsplit(".", 1)[0]) or "oferta"
+    imagem.save(f"{nome_base}.jpg", ContentFile(buffer.getvalue()), save=False)
 
 
 class Categoria(models.Model):
@@ -75,6 +97,11 @@ class Oferta(models.Model):
 
     def __str__(self):
         return self.titulo
+
+    def save(self, *args, **kwargs):
+        if self.imagem and not self.imagem._committed:
+            padronizar_imagem(self.imagem)
+        super().save(*args, **kwargs)
 
     def get_absolute_url(self):
         return reverse("oferta_detalhe", args=[self.pk])

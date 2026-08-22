@@ -126,6 +126,9 @@
             <a href="{% url 'chat' solicitacao.pk %}" class="btn btn--filled btn--block">
               <span class="material-symbols-rounded">chat</span> Ver conversas
             </a>
+            <a href="{% url 'solicitacao_editar' solicitacao.pk %}" class="btn btn--outline btn--block">
+              <span class="material-symbols-rounded">edit</span> Editar solicitação
+            </a>
           {% elif proposta_do_usuario %}
             {# Profissional já enviou proposta — exibe um resumo #}
             <div style="padding:12px 14px;border-radius:var(--radius-sm);background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);margin-bottom:10px;">

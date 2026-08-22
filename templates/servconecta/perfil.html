@@ -1,0 +1,179 @@
+{% extends "servconecta/base.html" %}
+
+{% block title %}Meu perfil &middot; ServConecta{% endblock %}
+{% block description %}Gerencie suas ofertas e solicitações de serviço na ServConecta.{% endblock %}
+
+{% block extra_head %}
+<style>
+  .perfil-tabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 999px;
+    flex-wrap: wrap;
+  }
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: .92rem;
+    color: var(--ink-soft);
+    transition: background .2s ease, color .2s ease, box-shadow .2s ease;
+  }
+  .tab:hover { background: rgba(26,86,219,.08); color: var(--primary); }
+  .tab--active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: var(--e1);
+  }
+  .tab--active:hover { background: var(--primary-strong); color: #fff; }
+  .tab__count {
+    padding: 1px 9px;
+    border-radius: 999px;
+    font-size: .74rem;
+    font-weight: 700;
+    background: rgba(15,23,42,.08);
+    color: inherit;
+  }
+  .tab--active .tab__count { background: rgba(255,255,255,.25); }
+  .tab-spacer { flex: 1; }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .card-actions .btn { flex: 1; }
+
+  @media (max-width: 520px) {
+    .perfil-tabs { border-radius: var(--radius); flex-direction: column; align-items: stretch; }
+    .tab { justify-content: center; }
+    .tab-spacer { display: none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<section class="page-head">
+  <h1>Olá, {{ user.get_short_name|default:user.username }}!</h1>
+  <p>Gerencie suas ofertas e solicitações de serviço.</p>
+</section>
+
+<!-- ==================== MENU DO PERFIL ==================== -->
+<nav class="perfil-tabs glass" aria-label="Menu do perfil">
+  <a href="?aba=ofertas" class="tab {% if aba == 'ofertas' %}tab--active{% endif %}">
+    <span class="material-symbols-rounded">work</span>
+    Minhas ofertas
+    <span class="tab__count">{{ total_ofertas }}</span>
+  </a>
+  <a href="?aba=solicitacoes" class="tab {% if aba == 'solicitacoes' %}tab--active{% endif %}">
+    <span class="material-symbols-rounded">assignment</span>
+    Minhas solicitações
+    <span class="tab__count">{{ total_solicitacoes }}</span>
+  </a>
+  <span class="tab-spacer"></span>
+  {% if aba == 'ofertas' %}
+    <a href="{% url 'oferta_criar' %}" class="btn btn--filled">
+      <span class="material-symbols-rounded">add</span> Nova oferta
+    </a>
+  {% else %}
+    <a href="{% url 'solicitacao_criar' %}" class="btn btn--filled">
+      <span class="material-symbols-rounded">add</span> Nova solicitação
+    </a>
+  {% endif %}
+</nav>
+
+<!-- ==================== MINHAS OFERTAS ==================== -->
+{% if aba == 'ofertas' %}
+<section style="margin-top:24px;">
+  <div class="cards-grid">
+    {% for oferta in minhas_ofertas %}
+      <article class="offer glass">
+        <div class="offer__media">
+          {% if oferta.imagem %}
+            <img src="{{ oferta.imagem.url }}" alt="{{ oferta.titulo }}" loading="lazy" />
+          {% else %}
+            <span class="material-symbols-rounded" style="font-size:40px">image</span>
+          {% endif %}
+        </div>
+        <div class="offer__body">
+          {% if oferta.categoria %}
+            <div class="cat-badge">
+              <span class="material-symbols-rounded">label</span>
+              {{ oferta.categoria.nome }}
+              {% if oferta.subcategoria %} › {{ oferta.subcategoria.nome }}{% endif %}
+            </div>
+          {% endif %}
+          <h3 class="offer__title">{{ oferta.titulo }}</h3>
+          <p class="offer__desc">{{ oferta.descricao }}</p>
+          <div class="offer__meta">
+            <span class="price">
+              R$ {{ oferta.preco }} <small>/{{ oferta.unidade|default:"serviço" }}</small>
+            </span>
+            <span class="location">
+              <span class="material-symbols-rounded">location_on</span>{{ oferta.cidade }}
+            </span>
+          </div>
+          <div class="card-actions">
+            <a href="{% url 'oferta_editar' oferta.pk %}" class="btn btn--outline">
+              <span class="material-symbols-rounded">edit</span> Editar
+            </a>
+            <a href="{% url 'oferta_detalhe' oferta.pk %}" class="btn btn--filled">Ver detalhes</a>
+          </div>
+        </div>
+      </article>
+    {% empty %}
+      <div class="empty-state glass">
+        <span class="material-symbols-rounded">work_off</span>
+        Você ainda não cadastrou nenhuma oferta.
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ==================== MINHAS SOLICITAÇÕES ==================== -->
+{% else %}
+<section style="margin-top:24px;">
+  <div class="cards-grid">
+    {% for solicitacao in minhas_solicitacoes %}
+      <article class="offer request glass">
+        <div class="offer__body">
+          {% if solicitacao.categoria %}
+            <div class="cat-badge">
+              <span class="material-symbols-rounded">label</span>
+              {{ solicitacao.categoria.nome }}
+              {% if solicitacao.subcategoria %} › {{ solicitacao.subcategoria.nome }}{% endif %}
+            </div>
+          {% endif %}
+          <span class="badge badge--open">{{ solicitacao.get_status_display|default:"aberta" }}</span>
+          <h3 class="offer__title">{{ solicitacao.titulo }}</h3>
+          <p class="offer__desc">{{ solicitacao.descricao }}</p>
+          <span class="price price--accent">R$ {{ solicitacao.orcamento|default:"—" }}</span>
+          <div class="request__info">
+            <span class="row"><span class="material-symbols-rounded">location_on</span>{{ solicitacao.cidade }}</span>
+            <span class="row"><span class="material-symbols-rounded">event</span>{{ solicitacao.prazo|date:"d/m/Y"|default:"flexível" }}</span>
+          </div>
+          <div class="card-actions">
+            <a href="{% url 'solicitacao_editar' solicitacao.pk %}" class="btn btn--outline">
+              <span class="material-symbols-rounded">edit</span> Editar
+            </a>
+            <a href="{% url 'solicitacao_detalhe' solicitacao.pk %}" class="btn btn--filled">Ver detalhes</a>
+          </div>
+        </div>
+      </article>
+    {% empty %}
+      <div class="empty-state glass">
+        <span class="material-symbols-rounded">assignment_late</span>
+        Você ainda não publicou nenhuma solicitação.
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

@@ -178,6 +178,34 @@ def oferta_criar(request):
 
 
 @login_required
+def oferta_editar(request, pk):
+    """Dono da oferta edita seus dados, inclusive Categoria/Subcategoria e imagem."""
+    oferta = get_object_or_404(Oferta, pk=pk)
+
+    if request.user != oferta.prestador and not request.user.is_staff:
+        messages.error(request, "Você só pode editar as suas próprias ofertas.")
+        return redirect("oferta_detalhe", pk=pk)
+
+    if request.method == "POST":
+        form = OfertaForm(request.POST, request.FILES, instance=oferta)
+        if form.is_valid():
+            oferta = form.save(commit=False)
+            if request.POST.get("remover_imagem"):
+                oferta.imagem = None
+            oferta.save()
+            messages.success(request, "Oferta atualizada com sucesso!")
+            return redirect(oferta)
+    else:
+        form = OfertaForm(instance=oferta)
+
+    return render(
+        request,
+        "servconecta/oferta_form.html",
+        {"form": form, "oferta": oferta, "editando": True},
+    )
+
+
+@login_required
 def solicitacao_criar(request):
     if request.method == "POST":
         form = SolicitacaoForm(request.POST)
@@ -189,6 +217,57 @@ def solicitacao_criar(request):
     else:
         form = SolicitacaoForm()
     return render(request, "servconecta/solicitacao_form.html", {"form": form})
+
+
+@login_required
+def solicitacao_editar(request, pk):
+    """Dono da solicitação edita seus dados, inclusive Categoria/Subcategoria."""
+    solicitacao = get_object_or_404(Solicitacao, pk=pk)
+
+    if request.user != solicitacao.cliente and not request.user.is_staff:
+        messages.error(request, "Você só pode editar as suas próprias solicitações.")
+        return redirect("solicitacao_detalhe", pk=pk)
+
+    if request.method == "POST":
+        form = SolicitacaoForm(request.POST, instance=solicitacao)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Solicitação atualizada com sucesso!")
+            return redirect(solicitacao)
+    else:
+        form = SolicitacaoForm(instance=solicitacao)
+
+    return render(
+        request,
+        "servconecta/solicitacao_form.html",
+        {"form": form, "solicitacao": solicitacao, "editando": True},
+    )
+
+
+@login_required
+def perfil(request):
+    """Perfil do usuário: menu com Minhas ofertas e Minhas solicitações."""
+    aba = request.GET.get("aba", "ofertas")
+    if aba not in ("ofertas", "solicitacoes"):
+        aba = "ofertas"
+
+    minhas_ofertas = (
+        Oferta.objects.filter(prestador=request.user)
+        .select_related("prestador", "categoria", "subcategoria")
+    )
+    minhas_solicitacoes = (
+        Solicitacao.objects.filter(cliente=request.user)
+        .select_related("cliente", "categoria", "subcategoria")
+    )
+
+    context = {
+        "aba": aba,
+        "minhas_ofertas": minhas_ofertas,
+        "minhas_solicitacoes": minhas_solicitacoes,
+        "total_ofertas": minhas_ofertas.count(),
+        "total_solicitacoes": minhas_solicitacoes.count(),
+    }
+    return render(request, "servconecta/perfil.html", context)
 
 
 @login_required
