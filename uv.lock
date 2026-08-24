@@ -113,7 +113,7 @@ wheels = [
 [[package]]
 name = "serv-conecta"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "django" },
     { name = "pillow" },

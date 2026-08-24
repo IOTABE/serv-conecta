@@ -40,19 +40,22 @@
     color: #f59e0b;
     font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   }
+  /* Django 5+: CheckboxSelectMultiple renderiza <div id="id_tags"><div><label><input></label></div></div>
+     (antes era <ul><li>; sem o container posicionado, os inputs invisíveis com inset:0
+      cobriam o formulário inteiro e bloqueavam cliques nas estrelas) */
   .tags-bloco { margin-top: 20px; }
   .tags-bloco > label { font-size: .85rem; font-weight: 600; color: var(--md-on-surface-variant); }
-  .tags-bloco ul { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 10px 0 0; }
-  .tags-bloco li { position: relative; }
-  .tags-bloco input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
-  .tags-bloco label {
+  .tags-bloco #id_tags { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 10px 0 0; }
+  .tags-bloco #id_tags > div { position: relative; display: inline-flex; }
+  .tags-bloco #id_tags input { position: absolute; opacity: 0; inset: 0; cursor: pointer; margin: 0; }
+  .tags-bloco #id_tags label {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 7px 14px; border-radius: 999px; cursor: pointer;
     font-size: .84rem; font-weight: 600;
     background: rgba(26,86,219,.06); color: var(--ink-soft);
     border: 1.5px solid transparent; transition: all .15s ease;
   }
-  .tags-bloco input:checked + label {
+  .tags-bloco #id_tags label:has(input:checked) {
     background: rgba(26,86,219,.12); color: var(--primary);
     border-color: var(--primary);
   }
