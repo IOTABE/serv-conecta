@@ -50,7 +50,12 @@
     <article class="offer glass">
       <div class="offer__media">
         {% if oferta.imagem %}
-        <img src="{{ oferta.imagem.url }}" alt="{{ oferta.titulo }}" loading="lazy" />
+          <img src="{{ oferta.imagem.url }}"
+            {% if oferta.imagem_celular or oferta.imagem_tablet %}
+              srcset="{% if oferta.imagem_celular %}{{ oferta.imagem_celular.url }} 480w{% endif %}{% if oferta.imagem_tablet %}{% if oferta.imagem_celular %}, {% endif %}{{ oferta.imagem_tablet.url }} 768w{% endif %}, {{ oferta.imagem.url }} 1280w"
+              sizes="(max-width: 640px) 100vw, 360px"
+            {% endif %}
+            alt="{{ oferta.titulo }}" loading="lazy">
         {% else %}
         <span class="material-symbols-rounded" style="font-size:40px">image</span>
         {% endif %}

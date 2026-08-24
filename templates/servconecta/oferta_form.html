@@ -184,7 +184,12 @@
         <div class="field">
           <label>Imagem atual</label>
           <div class="imagem-atual">
-            <img src="{{ oferta.imagem.url }}" alt="{{ oferta.titulo }}" />
+            <img src="{{ oferta.imagem.url }}"
+              {% if oferta.imagem_celular or oferta.imagem_tablet %}
+                srcset="{% if oferta.imagem_celular %}{{ oferta.imagem_celular.url }} 480w{% endif %}{% if oferta.imagem_tablet %}{% if oferta.imagem_celular %}, {% endif %}{{ oferta.imagem_tablet.url }} 768w{% endif %}, {{ oferta.imagem.url }} 1280w"
+                sizes="180px"
+              {% endif %}
+              alt="{{ oferta.titulo }}" loading="eager">
             <label class="imagem-atual__remover">
               <input type="checkbox" name="remover_imagem" value="1" />
               Remover imagem

@@ -29,6 +29,19 @@ def campo_do_formulario(formulario, nome):
         return None
 
 
+@register.simple_tag
+def srcset_oferta(oferta):
+    """Monta o atributo srcset para imagem responsiva da oferta."""
+    partes = []
+    if getattr(oferta, "imagem_celular", None):
+        partes.append(f"{oferta.imagem_celular.url} 480w")
+    if getattr(oferta, "imagem_tablet", None):
+        partes.append(f"{oferta.imagem_tablet.url} 768w")
+    if getattr(oferta, "imagem", None):
+        partes.append(f"{oferta.imagem.url} 1280w")
+    return ", ".join(partes) if partes else ""
+
+
 @register.filter
 def dicionario(dicionario_, chave):
     """Acessa uma chave de dict no template."""

@@ -10,21 +10,36 @@ from django.urls import reverse
 from django.utils.text import slugify
 
 LADO_MAXIMO_IMAGEM = 1280
+LARGURA_TABLET_IMAGEM = 768
+LARGURA_CELULAR_IMAGEM = 480
 
 
-def padronizar_imagem(imagem, lado_maximo=LADO_MAXIMO_IMAGEM):
-    """Redimensiona, corrige rotação e reencodea a imagem como JPEG padrão."""
-    imagem.seek(0)
-    img = ImageOps.exif_transpose(Image.open(imagem))
+def padronizar_imagens(oferta):
+    """Gera o padrão JPEG da imagem de oferta em três larguras responsivas."""
+    arquivo = oferta.imagem
+    arquivo.seek(0)
+    img = ImageOps.exif_transpose(Image.open(arquivo))
     if img.mode != "RGB":
         img = img.convert("RGB")
-    if max(img.size) > lado_maximo:
-        img.thumbnail((lado_maximo, lado_maximo), Image.LANCZOS)
-    buffer = io.BytesIO()
-    img.save(buffer, format="JPEG", quality=85, optimize=True)
-    nome_arquivo = (imagem.name or "oferta").rsplit("/", 1)[-1]
+    nome_arquivo = (arquivo.name or "oferta").rsplit("/", 1)[-1]
     nome_base = slugify(nome_arquivo.rsplit(".", 1)[0]) or "oferta"
-    imagem.save(f"{nome_base}.jpg", ContentFile(buffer.getvalue()), save=False)
+
+    variantes = (
+        ("", LADO_MAXIMO_IMAGEM, "imagem"),
+        ("-tablet", LARGURA_TABLET_IMAGEM, "imagem_tablet"),
+        ("-celular", LARGURA_CELULAR_IMAGEM, "imagem_celular"),
+    )
+    for sufixo, largura_max, campo in variantes:
+        variante = img.copy()
+        if variante.width > largura_max:
+            altura = round(variante.height * largura_max / variante.width)
+            variante = variante.resize((largura_max, altura), Image.LANCZOS)
+        buffer = io.BytesIO()
+        variante.save(buffer, format="JPEG", quality=85, optimize=True)
+        campo_arquivo = getattr(oferta, campo)
+        campo_arquivo.save(
+            f"{nome_base}{sufixo}.jpg", ContentFile(buffer.getvalue()), save=False
+        )
 
 
 class Categoria(models.Model):
@@ -88,6 +103,13 @@ class Oferta(models.Model):
     unidade = models.CharField(max_length=20, default="SERVIÇO")
     cidade = models.CharField(max_length=120)
     imagem = models.ImageField(upload_to="ofertas/", blank=True, null=True)
+    # Variações responsivas geradas automaticamente a partir da imagem principal
+    imagem_tablet = models.ImageField(
+        upload_to="ofertas/", blank=True, null=True, editable=False
+    )
+    imagem_celular = models.ImageField(
+        upload_to="ofertas/", blank=True, null=True, editable=False
+    )
     prestador_verificado = models.BooleanField(default=False)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -102,7 +124,11 @@ class Oferta(models.Model):
 
     def save(self, *args, **kwargs):
         if self.imagem and not self.imagem._committed:
-            padronizar_imagem(self.imagem)
+            padronizar_imagens(self)
+        elif not self.imagem:
+            # Sem imagem principal, as variações responsivas não fazem sentido
+            self.imagem_tablet = None
+            self.imagem_celular = None
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
