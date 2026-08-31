@@ -1,12 +1,15 @@
 import json
+import os
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.templatetags.static import static as static_url
 from django.urls import reverse
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
 from .forms import (
@@ -850,3 +853,58 @@ def cadastro(request):
     else:
         form = CadastroForm()
     return render(request, "servconecta/cadastro.html", {"form": form})
+
+
+# ---------------------------------------------------------------------------
+# PWA — manifest.json e service worker
+# ---------------------------------------------------------------------------
+
+
+def manifest_pwa(request):
+    def icon(path):
+        return request.build_absolute_uri(static_url(path))
+
+    data = {
+        "name": "ServConecta — Conectando Profissionais e Clientes",
+        "short_name": "ServConecta",
+        "description": "Encontre o serviço ideal ou ofereça seus talentos. Simples, seguro e transparente.",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "orientation": "portrait",
+        "background_color": "#eef2f9",
+        "theme_color": "#1a56db",
+        "lang": "pt-BR",
+        "icons": [
+            {
+                "src": icon("pwa/icons/icon-192x192.png"),
+                "sizes": "192x192",
+                "type": "image/png",
+            },
+            {
+                "src": icon("pwa/icons/icon-512x512.png"),
+                "sizes": "512x512",
+                "type": "image/png",
+            },
+            {
+                "src": icon("pwa/icons/icon-maskable-192x192.png"),
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "maskable",
+            },
+            {
+                "src": icon("pwa/icons/icon-maskable-512x512.png"),
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "maskable",
+            },
+        ],
+    }
+    return JsonResponse(data, json_dumps_params={"ensure_ascii": False})
+
+
+@never_cache
+def service_worker(request):
+    sw_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "pwa", "sw.js")
+    with open(sw_path) as f:
+        return HttpResponse(f.read(), content_type="application/javascript")

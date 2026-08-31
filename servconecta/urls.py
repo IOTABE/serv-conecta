@@ -5,6 +5,9 @@ from . import views
 
 urlpatterns = [
     path("", views.home, name="home"),
+    # PWA
+    path("manifest.json", views.manifest_pwa, name="manifest"),
+    path("sw.js", views.service_worker, name="service_worker"),
     # Ofertas
     path("ofertas/", views.ofertas, name="ofertas"),
     path("ofertas/nova/", views.oferta_criar, name="oferta_criar"),

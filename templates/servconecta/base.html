@@ -10,6 +10,14 @@
     content="{% block description %}Encontre o serviço ideal ou ofereça seus talentos. Simples, seguro e transparente.{% endblock %}" />
   <meta name="theme-color" content="#1a56db" />
 
+  <!-- PWA -->
+  <link rel="manifest" href="{% url 'manifest' %}" />
+  <link rel="apple-touch-icon" href="{% static 'pwa/icons/apple-touch-icon.png' %}" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ServConecta" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
   <!-- Roboto (Material Design) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -894,6 +902,15 @@
     });
   </script>
   {% block extra_scripts %}{% endblock %}
+
+  <!-- PWA Service Worker -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("{% url 'service_worker' %}");
+      });
+    }
+  </script>
 </body>
 
 </html>
